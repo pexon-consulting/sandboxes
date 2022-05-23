@@ -45,9 +45,9 @@ jobs:
         with:
           cdk_subcommand: "diff"
           actions_comment: true
-          cdk_stack: "* 'prod/*'"
+          cdk_stack: "* 'prod/*' 'test/*'"
           # cdk_args: "--require-approval never"
-          working_dir: "infrastrucutre"
+          working_dir: "infrastructure"
         env:
           # AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CICD_IAC }}
           # AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CICD_IAC }}
