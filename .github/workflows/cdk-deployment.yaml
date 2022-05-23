@@ -45,7 +45,7 @@ jobs:
         with:
           cdk_subcommand: "diff"
           actions_comment: true
-          cdk_stack: '* prod/"*" test/"*"'
+          cdk_stack: "prod/* test/*"
           # cdk_args: "--require-approval never"
           working_dir: "infrastructure"
         env:
