@@ -43,8 +43,9 @@ jobs:
       - name: cdk deploy
         uses: youyo/aws-cdk-github-actions@v2
         with:
-          cdk_subcommand: 'diff "*" prod/"*" test/"*"'
+          cdk_subcommand: "diff"
           actions_comment: true
+          cdk_stack: '"*" prod/"*" test/"*"'
           cdk_args: "--require-approval never"
           working_dir: "infrastrucutre"
         env:
