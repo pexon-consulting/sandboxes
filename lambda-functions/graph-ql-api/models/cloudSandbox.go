@@ -35,7 +35,7 @@ type AwsSandbox struct {
 	AssignedUntil string
 	AssignedSince string
 	AssignedTo    string
-	AccountName   string
+	State         string
 }
 
 type LeaseAwsResolver struct {
@@ -58,8 +58,8 @@ func (r *LeaseAwsResolver) AssignedTo() string {
 	return r.U.AssignedTo
 }
 
-func (r *LeaseAwsResolver) AccountName() string {
-	return r.U.AccountName
+func (r *LeaseAwsResolver) State() string {
+	return r.U.State
 }
 
 // AzureSandbox and LeaseAzureResolver
@@ -74,6 +74,7 @@ type AzureSandbox struct {
 	ProjectId     string
 	WebUrl        string
 	SandboxName   string
+	State         string
 }
 
 type LeaseAzureResolver struct {
@@ -101,6 +102,10 @@ func (r *LeaseAzureResolver) AssignedTo() string {
 }
 func (r *LeaseAzureResolver) SandboxName() string {
 	return r.U.SandboxName
+}
+
+func (r *LeaseAzureResolver) State() string {
+	return r.U.State
 }
 
 // ToAwsSandbox and ToAzureSandbox

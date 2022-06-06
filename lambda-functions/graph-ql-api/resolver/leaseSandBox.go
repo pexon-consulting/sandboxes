@@ -40,6 +40,10 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		return nil, fmt.Errorf("Lease-Time is not correct")
 	}
 
+	// generate a UUID
+	id := uuid.New()
+	graphqlId := graphql.ID(id.String())
+
 	s := strings.Split(args.LeaseTime, "-")
 	year, _ := strconv.Atoi(s[0])
 	month, _ := strconv.Atoi(s[1])
@@ -88,31 +92,16 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	// check if the Cloud is AWS
 	if args.Cloud == models.PublicCloud.GetAWS() {
 
-		svc := connection.GetDynamoDbClient(ctx)
-
-		items := api.ScanSandboxTable(ctx, svc)
-
-		sandbox, err := utils.FindAvailableSandbox(items)
-
-		if err != nil {
-			return nil, fmt.Errorf("error while finding a sandbox")
-		}
-
-		if sandbox == nil {
-			// TODO 🔥 add custom error to be more clear whats going on
-			// if there is no Sandbox for AWS-Available it should not look like a server-error
-			return nil, fmt.Errorf("no Sandbox Available")
-		}
-
+		/*
+			create current time and the until time object
+		*/
 		since, until := utils.TimeRange(year, month, day)
 
-		sandbox.Assigned_to = args.Email
-		sandbox.Assigned_since = *since
-		sandbox.Assigned_until = *until
-		sandbox.Available = "false"
+		svc := connection.GetEventBridgeClient(ctx)
 
-		updatedSandbox, err := api.UpdateSandBoxItem(ctx, svc, *sandbox)
+		event := api.Event{}
 
+		_, err := api.PutEvent(ctx, svc, &event)
 		if err != nil {
 			return nil, err
 		}
@@ -120,11 +109,11 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		return &models.LeaseSandBoxResult{
 			Result: &models.LeaseAwsResolver{
 				U: models.AwsSandbox{
-					Id:            "uuid!",
-					AssignedUntil: updatedSandbox.Assigned_until,
-					AssignedSince: updatedSandbox.Assigned_since,
-					AssignedTo:    updatedSandbox.Assigned_to,
-					AccountName:   updatedSandbox.Account_name,
+					Id:            graphqlId,
+					AssignedUntil: *until,
+					AssignedSince: *since,
+					AssignedTo:    args.Email,
+					State:         "requested",
 				},
 			},
 		}, nil

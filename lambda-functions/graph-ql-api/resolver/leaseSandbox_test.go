@@ -12,6 +12,8 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
+	eventbridgeTypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/errors"
@@ -74,16 +76,13 @@ var Query = `
 				leaseSandBox(email: $email, leaseTime: $leaseTime, cloud: $cloud) {
 					__typename
 					... on CloudSandbox {
-						id
 						assignedTo
 						assignedUntil
-						assignedSince
+						state
 					}
 					... on AwsSandbox {
-						accountName
 					}
 					... on AzureSandbox {
-						sandboxName
 					}
 				}
 			}
@@ -108,16 +107,6 @@ func TestLeaseASandbox_malformed_input(t *testing.T) {
 	var wrongLeaseTime = []*errors.QueryError{{
 		ResolverError: fmt.Errorf(`Lease-Time is not correct`),
 		Message:       `Lease-Time is not correct`,
-		Path:          path}}
-
-	var malformedAvailableproperty = []*errors.QueryError{{
-		ResolverError: fmt.Errorf(`error while finding a sandbox`),
-		Message:       `error while finding a sandbox`,
-		Path:          path}}
-
-	var noAvailableSandbox = []*errors.QueryError{{
-		ResolverError: fmt.Errorf(`no Sandbox Available`),
-		Message:       `no Sandbox Available`,
 		Path:          path}}
 
 	tests := []struct {
@@ -145,26 +134,6 @@ func TestLeaseASandbox_malformed_input(t *testing.T) {
 				"cloud":     "AWS",
 			},
 			ExpectedErrors: wrongLeaseTime,
-		},
-		{
-			testname: "malformed_available_property",
-			svc:      malformed_available,
-			variables: map[string]interface{}{
-				"email":     "test.test@pexon-consulting.de",
-				"leaseTime": "2024-10-20",
-				"cloud":     "AWS",
-			},
-			ExpectedErrors: malformedAvailableproperty,
-		},
-		{
-			testname: "no_available_sandbox",
-			svc:      no_available_sandbox,
-			variables: map[string]interface{}{
-				"email":     "test.test@pexon-consulting.de",
-				"leaseTime": "2024-05-02",
-				"cloud":     "AWS",
-			},
-			ExpectedErrors: noAvailableSandbox,
 		},
 	}
 
@@ -213,43 +182,15 @@ func TestLeaseSandbox_Internal_Servererror(t *testing.T) {
 	############################################################
 */
 
-func TestLeaseSandbox_AWS_Successfully_Provisioning(t *testing.T) {
+func TestLeaseSandbox_AWS_Successfully_Requested(t *testing.T) {
+	os.Setenv("env", "test")
 
-	svc := api.MockedDynamoDB{
-		Scan_response: &dynamodb.ScanOutput{
-			Count: 2,
-			Items: []map[string]types.AttributeValue{
-				{
-					"account_id":     &types.AttributeValueMemberS{Value: "123"},
-					"assigned_to":    &types.AttributeValueMemberS{Value: ""},
-					"assigned_since": &types.AttributeValueMemberS{Value: ""},
-					"assigned_until": &types.AttributeValueMemberS{Value: ""},
-					"available":      &types.AttributeValueMemberS{Value: "true"},
-				},
-				{
-					"account_id":     &types.AttributeValueMemberS{Value: "456"},
-					"assigned_to":    &types.AttributeValueMemberS{Value: ""},
-					"assigned_since": &types.AttributeValueMemberS{Value: ""},
-					"assigned_until": &types.AttributeValueMemberS{Value: ""},
-					"available":      &types.AttributeValueMemberS{Value: "true"},
-				},
-			},
-			LastEvaluatedKey: map[string]types.AttributeValue{},
-			ScannedCount:     2,
-			ResultMetadata:   middleware.Metadata{},
+	svc := api.MockedEventbridge{
+		PutEvents_response: &eventbridge.PutEventsOutput{
+			Entries:          []eventbridgeTypes.PutEventsResultEntry{},
+			FailedEntryCount: 0,
 		},
-		Scan_err: nil,
-		UpdateItem_response: &dynamodb.UpdateItemOutput{
-			Attributes: map[string]types.AttributeValue{
-				"account_id":     &types.AttributeValueMemberS{Value: "123"},
-				"account_name":   &types.AttributeValueMemberS{Value: "sandbox-123"},
-				"assigned_to":    &types.AttributeValueMemberS{Value: "test.test@pexon-consulting.de"},
-				"assigned_since": &types.AttributeValueMemberS{Value: "2022"},
-				"assigned_until": &types.AttributeValueMemberS{Value: "2022"},
-				"available":      &types.AttributeValueMemberS{Value: "false"},
-			},
-		},
-		UpdateItem_err: nil,
+		PutEvents_err: nil,
 	}
 
 	ctx := context.WithValue(context.TODO(), utils.SvcClient, svc)
@@ -267,36 +208,24 @@ func TestLeaseSandbox_AWS_Successfully_Provisioning(t *testing.T) {
 			ExpectedResult: `{
 				"leaseSandBox":{
 					"__typename": "AwsSandbox",
-					"accountName": "sandbox-123",
-					"assignedSince": "2022",
 					"assignedTo": "test.test@pexon-consulting.de",
-					"assignedUntil": "2022",
-					"id": "uuid!"
+					"assignedUntil": "2024-05-01T22:00:00Z",
+					"state": "requested"
 				}
 			}`,
 		},
 	})
 }
 
-func TestLeaseSandbox_AWS_Without_Account_Id(t *testing.T) {
+func TestLeaseSandbox_AWS_Successfully_Fail_Requested(t *testing.T) {
+	os.Setenv("env", "test")
 
-	svc := api.MockedDynamoDB{
-		Scan_response: &dynamodb.ScanOutput{
-			Count: 1,
-			Items: []map[string]types.AttributeValue{
-				{
-					"account_id":     &types.AttributeValueMemberS{Value: ""},
-					"assigned_to":    &types.AttributeValueMemberS{Value: ""},
-					"assigned_since": &types.AttributeValueMemberS{Value: ""},
-					"assigned_until": &types.AttributeValueMemberS{Value: ""},
-					"available":      &types.AttributeValueMemberS{Value: "true"},
-				},
-			},
-			LastEvaluatedKey: map[string]types.AttributeValue{},
-			ScannedCount:     2,
-			ResultMetadata:   middleware.Metadata{},
+	svc := api.MockedEventbridge{
+		PutEvents_response: &eventbridge.PutEventsOutput{
+			Entries:          []eventbridgeTypes.PutEventsResultEntry{},
+			FailedEntryCount: 1,
 		},
-		Scan_err: nil,
+		PutEvents_err: nil,
 	}
 
 	ctx := context.WithValue(context.TODO(), utils.SvcClient, svc)
@@ -313,8 +242,8 @@ func TestLeaseSandbox_AWS_Without_Account_Id(t *testing.T) {
 			Query:          Query,
 			ExpectedResult: "null",
 			ExpectedErrors: []*errors.QueryError{{
-				ResolverError: fmt.Errorf(`no Account_id provided`),
-				Message:       `no Account_id provided`,
+				ResolverError: fmt.Errorf(`there are failed events`),
+				Message:       `there are failed events`,
 				Path:          []interface{}{"leaseSandBox"}}},
 		},
 	})

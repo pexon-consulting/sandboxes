@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 )
 
 type DynamoAPI interface {
@@ -24,4 +25,17 @@ func (m MockedDynamoDB) Scan(ctx context.Context, params *dynamodb.ScanInput, op
 
 func (m MockedDynamoDB) UpdateItem(ctx context.Context, params *dynamodb.UpdateItemInput, optFns ...func(*dynamodb.Options)) (*dynamodb.UpdateItemOutput, error) {
 	return m.UpdateItem_response, m.UpdateItem_err
+}
+
+type EventbridgeAPI interface {
+	PutEvents(ctx context.Context, params *eventbridge.PutEventsInput, optFns ...func(*eventbridge.Options)) (*eventbridge.PutEventsOutput, error)
+}
+
+type MockedEventbridge struct {
+	PutEvents_response *eventbridge.PutEventsOutput
+	PutEvents_err      error
+}
+
+func (m MockedEventbridge) PutEvents(ctx context.Context, params *eventbridge.PutEventsInput, optFns ...func(*eventbridge.Options)) (*eventbridge.PutEventsOutput, error) {
+	return m.PutEvents_response, m.PutEvents_err
 }

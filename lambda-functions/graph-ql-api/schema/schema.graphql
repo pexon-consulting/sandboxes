@@ -23,6 +23,7 @@ interface CloudSandbox {
   assignedUntil: String!
   assignedSince: String!
   assignedTo: String!
+  state: String!
 }
 
 type AwsSandbox implements CloudSandbox {
@@ -30,7 +31,7 @@ type AwsSandbox implements CloudSandbox {
   assignedUntil: String!
   assignedSince: String!
   assignedTo: String!
-  accountName: String!
+  state: String!
 }
 
 type AzureSandbox implements CloudSandbox {
@@ -38,7 +39,7 @@ type AzureSandbox implements CloudSandbox {
   assignedUntil: String!
   assignedSince: String!
   assignedTo: String!
-  sandboxName: String!
+  state: String!
 }
 
 type CreateNewSandboxResponse {

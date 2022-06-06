@@ -10,26 +10,25 @@ func TestLeaseAwsResolver(t *testing.T) {
 	tests := []models.LeaseAwsResolver{
 		{
 			models.AwsSandbox{
-				Id:          "Test",
-				AccountName: "Test",
+				Id: "Test",
 			},
 		},
 		{
 			models.AwsSandbox{
 				Id:            "Test",
-				AccountName:   "Test",
 				AssignedSince: "Test",
 				AssignedTo:    "Test",
 				AssignedUntil: "Test",
+				State:         "Test",
 			},
 		},
 		{
 			models.AwsSandbox{
 				Id:            "",
-				AccountName:   "",
 				AssignedSince: "",
 				AssignedTo:    "",
 				AssignedUntil: "",
+				State:         "",
 			},
 		},
 	}
@@ -41,7 +40,7 @@ func TestLeaseAwsResolver(t *testing.T) {
 				t.Errorf("error in item %d expect", i+1)
 			}
 
-			if tt.AccountName() != tt.U.AccountName {
+			if tt.State() != tt.U.State {
 				t.Errorf("error in item %d expect", i+1)
 			}
 
