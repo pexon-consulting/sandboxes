@@ -38,7 +38,7 @@ class GitHubOIDC(Construct):
             assumed_by=iam.FederatedPrincipal(
                 federated=provider.open_id_connect_provider_arn,
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
-                conditions={"StringLike": {"token.actions.githubusercontent.com:sub": "repo:maxhaensel/awsoicd:*"}},
+                conditions={"StringLike": {"token.actions.githubusercontent.com:sub": "repo:pexon-consulting/sandboxes:*"}},
             ),
         )
 

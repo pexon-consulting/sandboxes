@@ -15,14 +15,14 @@ from aws_cdk import (
 """
 Datamodel
 {
-    "id": "<uuid>",
+    "assigned_to": "<email-adresse>", #PK
+    "id": "<uuid>",  #SK
     "sandbox_name": "",
-    "state#id": "",
     "cloud": "aws | azure | gcp"
     "assigned_until": "2022-04-03T00:00:00Z",
     "assigned_since": "2022-03-02T22:09:52Z",
-    "assigned_to": "<email-adresse>",
-    "state": "pending | completed | ready",
+
+    "state": "requested | no_sandbox_available | accounted | returned | error ",
     "azure": {"pipeline-id": ""},
     "aws": {
         "account_name": "",
@@ -70,9 +70,9 @@ class AWSTable(Construct):
         table.add_global_secondary_index(
             index_name="gsi_cloud",
             partition_key=dynamodb.Attribute(name="cloud", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(name="state#id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="state", type=dynamodb.AttributeType.STRING),
             projection_type=dynamodb.ProjectionType.INCLUDE,
-            non_key_attributes=["sandbox_name", "aws", "azure", "assigned_to"],
+            non_key_attributes=["sandbox_name", "aws", "azure", "assigned_to", "assigned_until"],
         )
 
         self.table = table

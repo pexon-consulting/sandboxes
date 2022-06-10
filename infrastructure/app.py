@@ -24,53 +24,45 @@ env_EU = Environment(account=root_account, region=region)
 
 app = App()
 
+Tags.of(app).add("needUntil", "2099-01-01T00:00:00.000Z")
+Tags.of(app).add("creator", "maximilian.haensel@pexon-consulting.de")
+Tags.of(app).add("app", "aws-sandbox-handler")
+
 
 class SandboxStage(Stage):
     def __init__(self, scope, id: str, enviroment: Enviroments, *, env=None, outdir=None):
         super().__init__(scope, id, env=env, outdir=outdir)
 
-        Tags.of(self).add("needUntil", "2099-01-01T00:00:00.000Z")
-        Tags.of(self).add("creator", "maximilian.haensel@pexon-consulting.de")
-        Tags.of(self).add("app", "aws-sandbox-handler")
         Tags.of(self).add("stage", id)
+        
 
-        if enviroment == Enviroments.prod:
-            CICDPreperation(self, "CICDPreperation")
+        # nuke_roles = None
+        # if enviroment == Enviroments.prod:
+        #     nuke_roles: List[NukeHandlerCrossRole] = []
+        #     for account in sandboxes:
+        #         # x = NukeHandlerCrossRole.loop(self, "asda")
+        #         role = NukeHandlerCrossRole(
+        #             self,
+        #             account["name"],
+        #             env={
+        #                 "account": account["id"],
+        #                 "region": region,
+        #             },
+        #         )
+        #         nuke_roles.append(role)
 
-        # role_array = NukeHandlerCrossRole.loop(scope=self, sandboxes=sandboxes, enviroment=enviroment)
-        nuke_roles = None
-        if enviroment == Enviroments.prod:
-            nuke_roles: List[NukeHandlerCrossRole] = []
-            for account in sandboxes:
-                # x = NukeHandlerCrossRole.loop(self, "asda")
-                role = NukeHandlerCrossRole(
-                    self,
-                    account["name"],
-                    env={
-                        "account": account["id"],
-                        "region": region,
-                    },
-                )
-                nuke_roles.append(role)
+        sandbox = CloudSandboxes(
+            self,
+            "Sandbox",
+            # nuke_roles=nuke_roles,
+            enviroment=enviroment,
+        )
+        # if nuke_roles:
+        #     for role in nuke_roles:
+        #         sandbox.add_dependency(role)
 
-        sso_role = None
-        if enviroment == Enviroments.prod:
-            sso_role = SSOHandlerCrossRole(
-                self,
-                "SSOCrossRole",
-                env={
-                    "account": sso_account,
-                    "region": region,
-                },
-            )
-
-        sandbox = CloudSandboxes(self, "Sandbox", roles=nuke_roles, sso_role=sso_role, enviroment=enviroment)
-        if nuke_roles:
-            for role in nuke_roles:
-                sandbox.add_dependency(role)
-
-        monitoring = Monitoring(self, "Monitoring", functions=sandbox.functions)
-        monitoring.add_dependency(sandbox)
+        # monitoring = Monitoring(self, "Monitoring", functions=sandbox.functions)
+        # monitoring.add_dependency(sandbox)
 
 
 SandboxStage(app, Enviroments.prod.value, env=env_EU, enviroment=Enviroments.prod)

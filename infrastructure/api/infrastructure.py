@@ -10,8 +10,7 @@ from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
 )
-
-from stacks.nuke_handler_cross_role import NukeHandlerCrossRole
+from event_bus.infrastructure import EventHub
 
 from variables import Enviroments
 
@@ -22,8 +21,7 @@ class GraphQLEndpoint(Construct):
         scope: Construct,
         construct_id: str,
         multi_cloud_table: dynamodb.Table,
-        roles: List[NukeHandlerCrossRole],
-        queue: sqs.Queue,
+        eventHub: EventHub,
         enviroment: Enviroments,
     ) -> None:
         super().__init__(scope, construct_id)
@@ -39,11 +37,6 @@ class GraphQLEndpoint(Construct):
         except:
             print("File Not Found, use main")
 
-        environment = {}
-        if roles != None:
-            for role in roles:
-                environment[str(role.id).replace("-", "")] = role.role_name
-
         func = lambda_.Function(
             self,
             "lambda",
@@ -54,14 +47,12 @@ class GraphQLEndpoint(Construct):
             timeout=Duration.seconds(30),
             memory_size=128,
             environment={
-                **environment,
                 "multi_cloud_table": multi_cloud_table.table_name,
                 "gitlab_azure_pipeline_webhook": os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "NA"),
-                "sqs_sso_assignment": queue.queue_name,
+                "event_source": eventHub.source,
+                "event_bus_name": eventHub.bus.event_bus_name,
             },
         )
-
-        queue.grant_send_messages(func)
 
         multi_cloud_table.grant_read_write_data(func)
 

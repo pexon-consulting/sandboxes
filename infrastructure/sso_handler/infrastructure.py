@@ -60,9 +60,7 @@ class SSOHandler(Construct):
 
 
 class SandboxGarbageCollector(Construct):
-    def __init__(
-        self, scope: Construct, construct_id: str, queue: sqs.Queue, sso_role: SSOHandlerCrossRole = None, **kwargs
-    ) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         function = lambda_.Function(
@@ -72,14 +70,10 @@ class SandboxGarbageCollector(Construct):
             runtime=lambda_.Runtime.PYTHON_3_9,
             code=lambda_.Code.from_asset("lambda/sheduler"),
             handler="handler.handler",
-            environment={
-                "sqs_sso_assignment": queue.queue_name,
-            },
+            environment={},
             timeout=Duration.seconds(60),
             memory_size=128,
         )
-
-        queue.grant_send_messages(function)
 
         # Run every day at 6PM UTC
         # See https://docs.aws.amazon.com/lambda/latest/dg/tutorial-scheduled-events-schedule-expressions.html
