@@ -34,7 +34,6 @@ class SandboxStage(Stage):
         super().__init__(scope, id, env=env, outdir=outdir)
 
         Tags.of(self).add("stage", id)
-        
 
         # nuke_roles = None
         # if enviroment == Enviroments.prod:
@@ -67,6 +66,8 @@ class SandboxStage(Stage):
 
 SandboxStage(app, Enviroments.prod.value, env=env_EU, enviroment=Enviroments.prod)
 SandboxStage(app, Enviroments.test.value, env=env_EU, enviroment=Enviroments.test)
+SandboxStage(app, Enviroments.test.value, env=env_EU, enviroment=Enviroments.dev)
+
 
 CICDPreperation(app, "CICDPreperation", env=env_EU)
 

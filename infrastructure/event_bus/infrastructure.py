@@ -21,6 +21,17 @@ class EventHub(Construct):
             },
         )
 
+        events.Rule(
+            self,
+            "azure_remove",
+            event_bus=bus,
+            targets=[events_targets.SfnStateMachine(sfnStepFunction)],
+            event_pattern={
+                "source": [source],
+                "detail": {"pipelineID": [{"exists": True}], "action": ["remove"], "cloud": ["azure"]},
+            },
+        )
+
         self.source = source
         self.bus = bus
 

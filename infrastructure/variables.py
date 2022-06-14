@@ -5,6 +5,7 @@ from enum import Enum
 class Enviroments(Enum):
     prod = "prod"
     test = "test"
+    dev = "dev"
 
 
 class Sandbox(TypedDict):

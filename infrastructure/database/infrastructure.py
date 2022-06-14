@@ -21,12 +21,15 @@ Datamodel
     "cloud": "aws | azure | gcp"
     "assigned_until": "2022-04-03T00:00:00Z",
     "assigned_since": "2022-03-02T22:09:52Z",
-
+    "returned_date": "2022-03-02T22:09:52Z",
     "state": "requested | no_sandbox_available | accounted | returned | error ",
-    "azure": {"pipeline-id": ""},
+    "azure": {
+        "pipeline-id": ""
+    },
     "aws": {
         "account_name": "",
         "account_id": "",
+        "costs": ...,
     },
 }
 """

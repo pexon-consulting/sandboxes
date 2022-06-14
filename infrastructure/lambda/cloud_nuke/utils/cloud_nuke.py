@@ -7,6 +7,7 @@ import subprocess
 
 def cloud_nuke(credentials) -> bool:
     lambda_key = os.getenv("AWS_ACCESS_KEY_ID")
+
     env = {
         "AWS_ACCESS_KEY_ID": credentials["AccessKeyId"],
         "AWS_SECRET_ACCESS_KEY": credentials["SecretAccessKey"],
