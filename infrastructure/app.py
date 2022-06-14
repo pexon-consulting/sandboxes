@@ -66,7 +66,6 @@ class SandboxStage(Stage):
 
 SandboxStage(app, Enviroments.prod.value, env=env_EU, enviroment=Enviroments.prod)
 SandboxStage(app, Enviroments.test.value, env=env_EU, enviroment=Enviroments.test)
-SandboxStage(app, Enviroments.test.value, env=env_EU, enviroment=Enviroments.dev)
 
 
 CICDPreperation(app, "CICDPreperation", env=env_EU)

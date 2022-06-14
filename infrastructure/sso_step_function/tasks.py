@@ -126,7 +126,7 @@ def sso_list_account_assignments(app, id: str):
     )
 
 
-def dynamodb_query_expired_sandboxes(app, id: str, table: dynamodb.Table):
+def dynamodb_query_expired_sandboxes(app, id: str, table: dynamodb.Table, cloud: str):
     task = {
         "Type": "Task",
         "Parameters": {
@@ -136,7 +136,7 @@ def dynamodb_query_expired_sandboxes(app, id: str, table: dynamodb.Table):
             "KeyConditionExpression": "cloud = :cloud AND #order_state = :state",
             "FilterExpression": "assigned_until <= :assigned_until",
             "ExpressionAttributeValues": {
-                ":cloud": {"S": "aws"},
+                ":cloud": {"S": cloud},
                 ":state": {"S": "sandbox_accounted"},
                 ":assigned_until": {"S.$": "$.time"},
             },

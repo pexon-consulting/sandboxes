@@ -23,6 +23,8 @@ from sso_step_function.tasks import (
     dynamodb_query_expired_sandboxes,
 )
 
+AWS_PREFIX = "aws"
+AZURE_PREFIX = "azure"
 sandbox_0_is_present = sfn.Condition.is_present("$.sandboxes[0]")
 
 
@@ -225,7 +227,12 @@ class SsoStepFunctionAdd(Construct):
         self.step_function = sfn_
 
 
-class SsoStepFunctionCronCleanUp(Construct):
+"""
+Remove SSO and Accounts 
+"""
+
+
+class SsoStepFunctionRemove(Construct):
     def __init__(
         self,
         scope: Construct,
@@ -237,16 +244,30 @@ class SsoStepFunctionCronCleanUp(Construct):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        dynamodb_query_expired_sandboxes_task = dynamodb_query_expired_sandboxes(
-            self, "dynamodb_query_expired_sandboxes", table
+        remove_with_id = AWSRemoveSSOWithAccountID(
+            self, f"{AWS_PREFIX} RemoveSSOWithAccountID", table=table, aws_nuke_queue=aws_nuke_queue
         )
 
-        map = sfn.Map(self, "map", items_path="$.output.Items", result_path=sfn.JsonPath.DISCARD)
-        parallel = sfn.Parallel(self, "parallel")
+        chain = sfn.Chain.start(remove_with_id)
+
+        sfn_ = sfn.StateMachine(self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5))
+
+        self.step_function = sfn_
+
+
+class AWSRemoveSSOWithAccountID(sfn.StateMachineFragment):
+    def __init__(
+        self, scope: Construct, construct_id: str, table: dynamodb.Table, aws_nuke_queue: sqs.Queue, **kwargs
+    ) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        PREFIX = "aws"
+
+        parallel = sfn.Parallel(self, f"{PREFIX} parallel")
 
         update_state = tasks.DynamoUpdateItem(
             self,
-            "dynamoDB returned",
+            f"{PREFIX} dynamoDB returned",
             table=table,
             expression_attribute_names={"#order_status": "state"},
             update_expression="SET #order_status = :state",
@@ -260,7 +281,7 @@ class SsoStepFunctionCronCleanUp(Construct):
 
         send_message = tasks.SqsSendMessage(
             self,
-            "nuke_aws",
+            f"{PREFIX} sqs nuke aws",
             queue=aws_nuke_queue,
             message_body=sfn.TaskInput.from_object(
                 {"cloud": "aws", "account_id": sfn.JsonPath.string_at("$.aws.M.account_id.S")}
@@ -268,17 +289,137 @@ class SsoStepFunctionCronCleanUp(Construct):
         )
         parallel.branch(send_message)
 
-        map2 = sfn.Map(self, "map2", items_path="$.AccountAssignments", result_path=sfn.JsonPath.DISCARD)
-        sso_list_account_assignments_task = sso_list_account_assignments(self, "sso_list_account_assignments")
+        map = sfn.Map(
+            self,
+            f"{PREFIX} map AccountAssignments",
+            items_path="$.AccountAssignments",
+            result_path=sfn.JsonPath.DISCARD,
+        )
 
-        sso_list_account_assignments_task.next(map2)
-        sso_delete_account_assignment_task = sso_delete_account_assignment(self, "sso_delete_account_assignment")
-        map2.iterator(sso_delete_account_assignment_task)
+        sso_list_account_assignments_task = sso_list_account_assignments(
+            self, f"{PREFIX} sso_list_account_assignments"
+        )
+
+        sso_list_account_assignments_task.next(map)
+        sso_delete_account_assignment_task = sso_delete_account_assignment(
+            self, f"{PREFIX} sso_delete_account_assignment"
+        )
+        map.iterator(sso_delete_account_assignment_task)
 
         parallel.branch(sso_list_account_assignments_task)
 
-        map.iterator(parallel)
-        chain = sfn.Chain.start(dynamodb_query_expired_sandboxes_task).next(map)
+        self._start_state = parallel
+        self._end_states = parallel.end_states
+
+    @property
+    def start_state(self):
+        return self._start_state
+
+    @property
+    def end_states(self):
+        return self._end_states
+
+
+class AZURERemoveSSOWithAccountID(sfn.StateMachineFragment):
+    def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, queue: sqs.Queue, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        PREFIX = "azure"
+
+        parallel = sfn.Parallel(self, f"{PREFIX} parallel")
+
+        update_state = tasks.DynamoUpdateItem(
+            self,
+            f"{PREFIX} dynamoDB returned",
+            table=table,
+            expression_attribute_names={"#order_status": "state"},
+            update_expression="SET #order_status = :state",
+            expression_attribute_values={":state": tasks.DynamoAttributeValue.from_string("returned")},
+            key={
+                "assigned_to": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.assigned_to.S")),
+                "id": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.id.S")),
+            },
+        )
+        parallel.branch(update_state)
+
+        send_message = tasks.SqsSendMessage(
+            self,
+            f"{PREFIX} sqs nuke aws",
+            queue=queue,
+            message_body=sfn.TaskInput.from_object(
+                {"cloud": "aws", "account_id": sfn.JsonPath.string_at("$.aws.M.account_id.S")}
+            ),
+        )
+        parallel.branch(send_message)
+
+        self._start_state = parallel
+        self._end_states = parallel.end_states
+
+    @property
+    def start_state(self):
+        return self._start_state
+
+    @property
+    def end_states(self):
+        return self._end_states
+
+
+class SsoStepFunctionCronCleanUp(Construct):
+    def __init__(
+        self,
+        scope: Construct,
+        construct_id: str,
+        table: dynamodb.Table,
+        aws_nuke_queue: sqs.Queue,
+        azure_nuke_queue: sqs.Queue,
+        enviroment,
+        **kwargs,
+    ) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+
+        query_expired_sandboxes_parallel = sfn.Parallel(self, "query_expired_sandboxes_parallel")
+
+        """
+        AWS Accounts
+        """
+
+        aws_dynamodb_query_expired_sandboxes_task = dynamodb_query_expired_sandboxes(
+            self, f"{AWS_PREFIX} dynamodb_query_expired_sandboxes", table=table, cloud="aws"
+        )
+        query_expired_sandboxes_parallel.branch(aws_dynamodb_query_expired_sandboxes_task)
+
+        map_aws = sfn.Map(self, f"{AWS_PREFIX} map", items_path="$.output.Items", result_path=sfn.JsonPath.DISCARD)
+
+        aws_remove_sso_with_account_id = AWSRemoveSSOWithAccountID(
+            self, f"{AWS_PREFIX} RemoveSSOWithAccountID", table=table, aws_nuke_queue=aws_nuke_queue
+        )
+
+        map_aws.iterator(aws_remove_sso_with_account_id)
+        aws_dynamodb_query_expired_sandboxes_task.next(map_aws)
+
+        """
+        AZURE Accounts
+        """
+        AZURE_PREFIX = "azure"
+        azure_dynamodb_query_expired_sandboxes_task = dynamodb_query_expired_sandboxes(
+            self, f"{AZURE_PREFIX} dynamodb_query_expired_sandboxes", table=table, cloud="azure"
+        )
+        query_expired_sandboxes_parallel.branch(azure_dynamodb_query_expired_sandboxes_task)
+
+        map_azure = sfn.Map(self, f"{AZURE_PREFIX} map", items_path="$.output.Items", result_path=sfn.JsonPath.DISCARD)
+
+        azure_remove_sso_with_account_id = AZURERemoveSSOWithAccountID(
+            self, f"{AZURE_PREFIX} RemoveSSOWithAccountID", table=table, queue=azure_nuke_queue
+        )
+
+        map_azure.iterator(azure_remove_sso_with_account_id)
+
+        azure_dynamodb_query_expired_sandboxes_task.next(map_azure)
+
+        """
+        Chain StepFunction
+        """
+        chain = sfn.Chain.start(query_expired_sandboxes_parallel)
 
         sfn_ = sfn.StateMachine(self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5))
 

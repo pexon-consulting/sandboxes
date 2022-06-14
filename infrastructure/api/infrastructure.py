@@ -49,7 +49,7 @@ class GraphQLEndpoint(Construct):
             environment={
                 "multi_cloud_table": multi_cloud_table.table_name,
                 "gitlab_azure_pipeline_webhook": os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "NA"),
-                "event_source": eventHub.source,
+                "event_source": eventHub.SOURCE,
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
         )
