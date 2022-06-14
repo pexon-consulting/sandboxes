@@ -7,7 +7,7 @@ import (
 )
 
 func TestLeaseAwsResolver(t *testing.T) {
-	tests := []models.LeaseAwsResolver{
+	tests := []models.AwsResolver{
 		{
 			models.AwsSandbox{
 				Id: "Test",
@@ -60,8 +60,8 @@ func TestLeaseAwsResolver(t *testing.T) {
 
 }
 
-func TestLeaseAzureResolver(t *testing.T) {
-	tests := []models.LeaseAzureResolver{
+func TestAzureResolver(t *testing.T) {
+	tests := []models.AzureResolver{
 		{
 			models.AzureSandbox{
 				Id:         "Test",

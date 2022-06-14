@@ -25,7 +25,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	Email     string
 	LeaseTime string
 	Cloud     string
-}) (*models.LeaseSandBoxResult, error) {
+}) (*models.Sandbox, error) {
 
 	valid = utils.ProofPexonMail(args.Email)
 	if !valid {
@@ -72,8 +72,8 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		}
 		json.NewDecoder(resp.Body).Decode(&res)
 
-		return &models.LeaseSandBoxResult{
-			Result: &models.LeaseAzureResolver{
+		return &models.Sandbox{
+			Result: &models.AzureResolver{
 				U: models.AzureSandbox{
 					Id:            graphql.ID(uuid.New().String()),
 					AssignedUntil: *until,
@@ -106,8 +106,8 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 			return nil, err
 		}
 
-		return &models.LeaseSandBoxResult{
-			Result: &models.LeaseAwsResolver{
+		return &models.Sandbox{
+			Result: &models.AwsResolver{
 				U: models.AwsSandbox{
 					Id:            graphqlId,
 					AssignedUntil: *until,

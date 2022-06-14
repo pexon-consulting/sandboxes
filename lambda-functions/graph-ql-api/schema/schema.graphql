@@ -9,15 +9,6 @@ enum Cloud {
   GCP
 }
 
-type Sandbox {
-  account_id: String!
-  account_name: String!
-  available: String
-  assigned_until: String
-  assigned_since: String
-  assigned_to: String
-}
-
 interface CloudSandbox {
   id: ID!
   assignedUntil: String!
@@ -42,35 +33,16 @@ type AzureSandbox implements CloudSandbox {
   state: String!
 }
 
-type CreateNewSandboxResponse {
-  sandbox: Sandbox!
-}
+union Sandbox = AzureSandbox | AwsSandbox
 
-type ListSandboxesResponse {
+type ListSandboxes {
   sandboxes: [Sandbox]
 }
 
 type Query {
-  listSandboxes(Email: String!): ListSandboxesResponse
-}
-
-union LeaseSandBoxResult = AzureSandbox | AwsSandbox
-
-# todo Delete
-type LeaseASandBoxResponse {
-  message: String!
-  sandbox: Sandbox!
+  listSandboxes(Email: String!): ListSandboxes
 }
 
 type Mutation {
-  deallocateSandbox(Account_id: String!): LeaseASandBoxResponse
-  leaseSandBox(
-    email: String!
-    leaseTime: String!
-    cloud: Cloud!
-  ): LeaseSandBoxResult!
-  createNewSandbox(
-    account_id: String!
-    account_name: String!
-  ): CreateNewSandboxResponse!
+  leaseSandBox(email: String!, leaseTime: String!, cloud: Cloud!): Sandbox!
 }

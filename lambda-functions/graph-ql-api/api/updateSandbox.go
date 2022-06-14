@@ -17,7 +17,7 @@ func UpdateSandBoxItem(ctx context.Context, svc DynamoAPI, sandbox models.Sandbo
 
 	table := os.Getenv("dynamodb_table")
 
-	if sandbox.Account_id == "" {
+	if sandbox.Id == "" {
 		return nil, fmt.Errorf("no Account_id provided")
 	}
 
@@ -28,7 +28,7 @@ func UpdateSandBoxItem(ctx context.Context, svc DynamoAPI, sandbox models.Sandbo
 	}
 
 	key := map[string]types.AttributeValue{
-		"account_id": &types.AttributeValueMemberS{Value: sandbox.Account_id},
+		"account_id": &types.AttributeValueMemberS{Value: sandbox.Id},
 	}
 
 	update := struct {
@@ -40,7 +40,7 @@ func UpdateSandBoxItem(ctx context.Context, svc DynamoAPI, sandbox models.Sandbo
 		Assigned_to:    sandbox.Assigned_to,
 		Assigned_since: sandbox.Assigned_since,
 		Assigned_until: sandbox.Assigned_until,
-		Available:      sandbox.Available,
+		Available:      sandbox.State,
 	}
 
 	expr, err := attributevalue.MarshalMap(update)

@@ -25,44 +25,46 @@ func (c Cloud) GetAZURE() string {
 	return string(c.AZURE)
 }
 
-type LeaseSandBoxResult struct {
+type Sandbox struct {
 	Result interface{}
 }
 
 // AwsSandbox and LeaseAwsResolver
 type AwsSandbox struct {
 	Id            graphql.ID
-	AssignedUntil string
-	AssignedSince string
 	AssignedTo    string
+	AssignedSince string
+	AssignedUntil string
+	Cloud         string
 	State         string
+	Aws           AwsItem
 }
 
-type LeaseAwsResolver struct {
+type AwsResolver struct {
 	U AwsSandbox
 }
 
-func (r *LeaseAwsResolver) Id() graphql.ID {
+func (r *AwsResolver) Id() graphql.ID {
 	return r.U.Id
 }
 
-func (r *LeaseAwsResolver) AssignedUntil() string {
+func (r *AwsResolver) AssignedUntil() string {
 	return r.U.AssignedUntil
 }
 
-func (r *LeaseAwsResolver) AssignedSince() string {
+func (r *AwsResolver) AssignedSince() string {
 	return r.U.AssignedSince
 }
 
-func (r *LeaseAwsResolver) AssignedTo() string {
+func (r *AwsResolver) AssignedTo() string {
 	return r.U.AssignedTo
 }
 
-func (r *LeaseAwsResolver) State() string {
+func (r *AwsResolver) State() string {
 	return r.U.State
 }
 
-// AzureSandbox and LeaseAzureResolver
+// AzureSandbox and AzureResolver
 
 type AzureSandbox struct {
 	Id            graphql.ID
@@ -70,6 +72,7 @@ type AzureSandbox struct {
 	AssignedUntil string
 	AssignedSince string
 	AssignedTo    string
+	Cloud         string
 	Status        string
 	ProjectId     string
 	WebUrl        string
@@ -77,45 +80,58 @@ type AzureSandbox struct {
 	State         string
 }
 
-type LeaseAzureResolver struct {
+type AzureResolver struct {
 	U AzureSandbox
 }
 
-func (r *LeaseAzureResolver) Id() graphql.ID {
+func (r *AzureResolver) Id() graphql.ID {
 	return r.U.Id
 }
 
-func (r *LeaseAzureResolver) PipelineId() string {
+func (r *AzureResolver) PipelineId() string {
 	return r.U.PipelineId
 }
 
-func (r *LeaseAzureResolver) AssignedUntil() string {
+func (r *AzureResolver) AssignedUntil() string {
 	return r.U.AssignedUntil
 }
 
-func (r *LeaseAzureResolver) AssignedSince() string {
+func (r *AzureResolver) AssignedSince() string {
 	return r.U.AssignedSince
 }
 
-func (r *LeaseAzureResolver) AssignedTo() string {
+func (r *AzureResolver) AssignedTo() string {
 	return r.U.AssignedTo
 }
-func (r *LeaseAzureResolver) SandboxName() string {
+func (r *AzureResolver) SandboxName() string {
 	return r.U.SandboxName
 }
 
-func (r *LeaseAzureResolver) State() string {
+func (r *AzureResolver) State() string {
 	return r.U.State
 }
 
 // ToAwsSandbox and ToAzureSandbox
-
-func (r *LeaseSandBoxResult) ToAwsSandbox() (*LeaseAwsResolver, bool) {
-	c, ok := r.Result.(*LeaseAwsResolver)
+func (r *Sandbox) ToAwsSandbox() (*AwsResolver, bool) {
+	c, ok := r.Result.(*AwsResolver)
 	return c, ok
 }
 
-func (r *LeaseSandBoxResult) ToAzureSandbox() (*LeaseAzureResolver, bool) {
-	c, ok := r.Result.(*LeaseAzureResolver)
+func (r *Sandbox) ToAzureSandbox() (*AzureResolver, bool) {
+	c, ok := r.Result.(*AzureResolver)
 	return c, ok
+}
+
+// LIST SANDBOX
+
+type ListSandboxes struct {
+	U ListSandboxesResolver
+}
+
+type ListSandboxesResolver struct {
+	Sandboxes []*Sandbox
+}
+
+func (r *ListSandboxes) Sandboxes() *[]*Sandbox {
+	return &r.U.Sandboxes
 }
