@@ -51,7 +51,7 @@ class GraphQLEndpoint(Construct):
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
             bundling=go_lambda.BundlingOptions(command_hooks=CommandHooks()),
-            module_dir="infrastructure/lambda/graph-ql-api",
+            module_dir="lambda/graph-ql-api",
         )
         # func = lambda_.Function(
         #     self,
