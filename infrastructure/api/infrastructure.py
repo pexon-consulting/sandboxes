@@ -40,7 +40,7 @@ class GraphQLEndpoint(Construct):
         func = go_lambda.GoFunction(
             self,
             "lambda",
-            entry="lambda/graph-ql-api",
+            entry="infrastructure/lambda/graph-ql-api",
             architecture=lambda_.Architecture.ARM_64,
             timeout=Duration.seconds(30),
             memory_size=128,
