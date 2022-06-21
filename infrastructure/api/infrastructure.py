@@ -9,10 +9,21 @@ from aws_cdk import (
     aws_apigateway as apigw,
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
+    aws_lambda_go_alpha as go_lambda,
 )
+import jsii
 from event_bus.infrastructure import EventHub
 
 from variables import Enviroments
+
+
+@jsii.implements(go_lambda.ICommandHooks)
+class CommandHooks:
+    def before_bundling(self, input_dir, output_dir):
+        return ["go generate ./schema"]
+
+    def after_bundling(self, input_dir, output_dir):
+        return []
 
 
 class GraphQLEndpoint(Construct):
@@ -26,33 +37,37 @@ class GraphQLEndpoint(Construct):
     ) -> None:
         super().__init__(scope, construct_id)
 
-        s3Bucket = s3.Bucket.from_bucket_name(
-            self, id="cdktoolkit-stagingbucket", bucket_name="cdk-hnb659fds-assets-063661473261-eu-central-1"
-        )
-
-        sha = "main"
-        try:
-            with open("./api/sha", "r") as f:
-                sha = f.read().rstrip()
-        except:
-            print("File Not Found, use main")
-
-        func = lambda_.Function(
+        func = go_lambda.GoFunction(
             self,
             "lambda",
-            architecture=lambda_.Architecture.X86_64,
-            runtime=lambda_.Runtime.GO_1_X,
-            code=lambda_.Code.from_bucket(s3Bucket, f"lambda/{sha}.zip"),
-            handler="main",
+            entry="lambda/graph-ql-api",
+            architecture=lambda_.Architecture.ARM_64,
             timeout=Duration.seconds(30),
             memory_size=128,
             environment={
-                "multi_cloud_table": multi_cloud_table.table_name,
+                "DYNAMODB_TABLE": multi_cloud_table.table_name,
                 "gitlab_azure_pipeline_webhook": os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "NA"),
                 "event_source": eventHub.SOURCE,
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
+            bundling=go_lambda.BundlingOptions(command_hooks=CommandHooks()),
         )
+        # func = lambda_.Function(
+        #     self,
+        #     "lambda",
+        #     architecture=lambda_.Architecture.X86_64,
+        #     runtime=lambda_.Runtime.GO_1_X,
+        #     code=lambda_.Code.from_bucket(s3Bucket, f"lambda/{sha}.zip"),
+        #     handler="main",
+        #     timeout=Duration.seconds(30),
+        #     memory_size=128,
+        #     environment={
+        #         "multi_cloud_table": multi_cloud_table.table_name,
+        #         "gitlab_azure_pipeline_webhook": os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "NA"),
+        #         "event_source": eventHub.SOURCE,
+        #         "event_bus_name": eventHub.bus.event_bus_name,
+        #     },
+        # )
 
         multi_cloud_table.grant_read_write_data(func)
 

@@ -29,6 +29,15 @@ type Sandbox struct {
 	Result interface{}
 }
 
+type AwsDetails struct {
+	AccountId   string
+	AccountName string
+}
+
+type AwsDetailsResolver struct {
+	U AwsDetails
+}
+
 // AwsSandbox and LeaseAwsResolver
 type AwsSandbox struct {
 	Id            graphql.ID
@@ -37,7 +46,7 @@ type AwsSandbox struct {
 	AssignedUntil string
 	Cloud         string
 	State         string
-	Aws           AwsItem
+	AwsDetails    AwsDetailsResolver
 }
 
 type AwsResolver struct {
@@ -62,6 +71,18 @@ func (r *AwsResolver) AssignedTo() string {
 
 func (r *AwsResolver) State() string {
 	return r.U.State
+}
+
+func (r *AwsResolver) AwsDetails() *AwsDetailsResolver {
+	return &r.U.AwsDetails
+}
+
+func (r *AwsDetailsResolver) AccountId() string {
+	return r.U.AccountId
+}
+
+func (r *AwsDetailsResolver) AccountName() string {
+	return r.U.AccountName
 }
 
 // AzureSandbox and AzureResolver

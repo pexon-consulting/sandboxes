@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
@@ -23,8 +24,19 @@ func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
 		}
 
 	}
+	region := config.WithRegion("eu-central-1")
+	optFns := []func(*config.LoadOptions) error{region}
 
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("eu-central-1"))
+	if os.Getenv("LOCAL_DYNAMODB") != "" {
+		localhost := config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+				return aws.Endpoint{URL: "http://localhost:8000", PartitionID: "aws", SigningRegion: "eu-central-1",
+					HostnameImmutable: true}, nil
+			}))
+		optFns = append(optFns, localhost)
+	}
+
+	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	customMW "lambda/aws-sandbox/graph-ql-api/middleware"
 	"lambda/aws-sandbox/graph-ql-api/relay"
 	"lambda/aws-sandbox/graph-ql-api/resolver"
 	"lambda/aws-sandbox/graph-ql-api/schema"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-
 	graphql "github.com/graph-gophers/graphql-go"
 )
 
@@ -18,7 +18,7 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	relay := &relay.Handler{GraphqlSchema: graphqlSchema}
 
-	return relay.ServeHTTP(ctx, request), nil
+	return relay.ServeHTTP(ctx, request, customMW.BindJwtToContext), nil
 }
 
 // func init() {
@@ -34,8 +34,14 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 // 			panic(err)
 // 		}
 
+// 		k := r.Header["Authorization"]
+// 		jwtString := strings.Split(k[0], " ")[1]
+
 // 		ctx := context.TODO()
-//  		mock_handler := events.APIGatewayProxyRequest{
+// 		mock_handler := events.APIGatewayProxyRequest{
+// 			Headers: map[string]string{
+// 				"Authorization: Bearer": jwtString,
+// 			},
 // 			Body: string(b),
 // 		}
 // 		responseJSON, _ := Handler(ctx, mock_handler)
@@ -48,7 +54,7 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 func main() {
 	// local()
 	lambda.Start(Handler)
+	// request := events.APIGatewayProxyRequest{}
+	// r, _ := Handler(context.TODO(), request)
+	// fmt.Print(r)
 }
-
-// Test Sha, remove later
-// Test Sha2, remove later :)

@@ -1,8 +1,8 @@
 package models
 
 type AwsItem struct {
-	Account_id   string
-	Account_name string
+	Account_id   string `dynamodbav:"account_id"`
+	Account_name string `dynamodbav:"account_name"`
 }
 type AzureItem struct{}
 
