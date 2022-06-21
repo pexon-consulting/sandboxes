@@ -40,7 +40,7 @@ class GraphQLEndpoint(Construct):
         func = go_lambda.GoFunction(
             self,
             "lambda",
-            entry="./lambda/graph-ql-api",
+            entry=f"{os.getcwd()}/lambda/graph-ql-api",
             architecture=lambda_.Architecture.ARM_64,
             timeout=Duration.seconds(30),
             memory_size=128,
@@ -51,7 +51,7 @@ class GraphQLEndpoint(Construct):
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
             bundling=go_lambda.BundlingOptions(command_hooks=CommandHooks()),
-            module_dir="./lambda/graph-ql-api",
+            # module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
         )
         # func = lambda_.Function(
         #     self,
