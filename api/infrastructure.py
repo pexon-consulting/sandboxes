@@ -50,7 +50,11 @@ class GraphQLEndpoint(Construct):
                 "event_source": eventHub.SOURCE,
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
-            bundling=go_lambda.BundlingOptions(command_hooks=CommandHooks()),
+            bundling=go_lambda.BundlingOptions(
+                command_hooks=CommandHooks(),
+                docker_image=""
+                # forced_docker_bundling=True
+            ),
             # module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
         )
         # func = lambda_.Function(
