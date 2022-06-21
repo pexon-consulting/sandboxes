@@ -34,11 +34,9 @@ jobs:
       - name: ls
         run: ls
       - name: ls
-        run: ls infrastructure
+        run: ls lambda
       - name: ls
-        run: ls infrastructure/lambda
-      - name: ls
-        run: ls infrastructure/lambda/graph-ql-api
+        run: ls lambda/graph-ql-api
       # - name: install all dependency
       #   run: pip install -r requirements-dev.txt
       # - name: run unittests
