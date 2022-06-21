@@ -54,7 +54,7 @@ class GraphQLEndpoint(Construct):
                 command_hooks=CommandHooks(),
                 # forced_docker_bundling=True
             ),
-            # module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
+            #  module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
         )
         # func = lambda_.Function(
         #     self,
