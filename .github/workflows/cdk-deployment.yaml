@@ -20,12 +20,12 @@ jobs:
           role-to-assume: arn:aws:iam::063661473261:role/CICDPreperation-GitHubOIDCOIDCRole5001FAA8-3LWHM4EVGQP4
           aws-region: eu-central-1
 
-      - name: init go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "^1.17.6" # The Go version to download (if necessary) and use.
-      - name: install go-bindata
-        run: go install github.com/jteeuwen/go-bindata/...@latest
+      # - name: init go
+      #   uses: actions/setup-go@v2
+      #   with:
+      #     go-version: "^1.17.6" # The Go version to download (if necessary) and use.
+      # - name: install go-bindata
+      #   run: go install github.com/jteeuwen/go-bindata/...@latest
 
       - name: ls
         run: ls lambda/graph-ql-api
