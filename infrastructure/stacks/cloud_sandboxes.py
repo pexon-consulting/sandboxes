@@ -47,7 +47,8 @@ class NukeLambdaWithQueue(Construct):
             timeout=duration,
             memory_size=128,
         )
-        nuke_lambda.add_event_source(lambda_event_sources.SqsEventSource(nuke_queue))
+        nuke_lambda.add_event_source(
+            lambda_event_sources.SqsEventSource(nuke_queue))
 
         self._lambda = nuke_lambda
         self.queue = nuke_queue
@@ -74,8 +75,10 @@ class CloudSandboxes(Stack):
         """
         eventHub = EventHub(self, "EventBus")
 
-        aws_nuke_lambda = NukeLambdaWithQueue(self, "aws nukeLambda", asset="lambda/cloud_nuke")
-        azure_nuke_lambda = NukeLambdaWithQueue(self, "azure nukeLambda", asset="lambda/azure_nuke")
+        aws_nuke_lambda = NukeLambdaWithQueue(
+            self, "aws nukeLambda", asset="lambda/cloud_nuke")
+        azure_nuke_lambda = NukeLambdaWithQueue(
+            self, "azure nukeLambda", asset="lambda/azure_nuke")
 
         sso_step_function = SsoStepFunctionAdd(
             self,
@@ -87,6 +90,19 @@ class CloudSandboxes(Stack):
         eventHub.addRuleWithStepFunctionTarget(
             id="AddAWSSandbox",
             sfnStepFunction=sso_step_function.step_function,
+            detail={"user": [{"exists": True}], "action": ["add"]},
+        )
+
+        azure_step_function = SsoStepFunctionAdd(
+            self,
+            "AzureStepFunction",
+            table=multi_cloud_table.table,
+            enviroment=enviroment,
+        )
+
+        eventHub.addRuleWithStepFunctionTarget(
+            id="AddAzureSandbox",
+            sfnStepFunction=azure_step_function.step_function,
             detail={"user": [{"exists": True}], "action": ["add"]},
         )
 
@@ -112,7 +128,8 @@ class CloudSandboxes(Stack):
             azure_nuke_queue=azure_nuke_lambda.queue,
             enviroment=enviroment,
         )
-        EventHubCron(self, "EventHubCron", sfnStepFunction=sso_step_cron.step_function)
+        EventHubCron(self, "EventHubCron",
+                     sfnStepFunction=sso_step_cron.step_function)
 
         """
         Graphql-Endpoint Backend
