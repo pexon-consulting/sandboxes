@@ -33,8 +33,6 @@ jobs:
           go-version: "^1.17.6" # The Go version to download (if necessary) and use.
       - name: install go-bindata
         run: go install github.com/jteeuwen/go-bindata/...@latest
-      - name: go vendor
-        run: go mod vendor
       # - name: install all dependency
       #   run: pip install -r requirements-dev.txt
       # - name: run unittests
