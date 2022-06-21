@@ -19,26 +19,25 @@ jobs:
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v3
-      # - name: configure aws credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     role-to-assume: arn:aws:iam::063661473261:role/CICDPreperation-GitHubOIDCOIDCRole5001FAA8-3LWHM4EVGQP4
-      #     aws-region: eu-central-1
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::063661473261:role/CICDPreperation-GitHubOIDCOIDCRole5001FAA8-3LWHM4EVGQP4
+          aws-region: eu-central-1
 
-      # - name: init go
-      #   uses: actions/setup-go@v2
-      #   with:
-      #     go-version: "^1.17.6" # The Go version to download (if necessary) and use.
-      # - name: install go-bindata
-      #   run: go install github.com/jteeuwen/go-bindata/...@latest
-      - name: ls
-        run: ls
-      - name: ls
-        run: ls lambda
+      - name: init go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.17.6" # The Go version to download (if necessary) and use.
+      - name: install go-bindata
+        run: go install github.com/jteeuwen/go-bindata/...@latest
+
       - name: ls
         run: ls lambda/graph-ql-api
-      # - name: install all dependency
-      #   run: pip install -r requirements-dev.txt
+      - name: ls
+        run: ls -a lambda/graph-ql-api/go.mod
+      - name: install all dependency
+        run: pip install -r requirements-dev.txt
       # - name: run unittests
       #   run: pytest --cov=./ --cov-report=xml
       # - name: update code-coverage
@@ -50,14 +49,14 @@ jobs:
       #     flags: infrastrucutre # optional
       #     name: infrastrucutre # optional
       #     fail_ci_if_error: true # optional (default = false)
-      # - name: cdk deploy
-      #   uses: youyo/aws-cdk-github-actions@v2
-      #   with:
-      #     cdk_subcommand: "diff"
-      #     actions_comment: true
-      #     cdk_stack: "*/*"
-      #     # cdk_args: "--require-approval never"
-      #     working_dir: "infrastructure"
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     GITLAB_AZURE_PIPELINE_WEBHOOK: ${{ secrets.GITLAB_AZURE_PIPELINE_WEBHOOK }}
+      - name: cdk deploy
+        uses: youyo/aws-cdk-github-actions@v2
+        with:
+          cdk_subcommand: "diff"
+          actions_comment: true
+          cdk_stack: "*/*"
+          # cdk_args: "--require-approval never"
+          working_dir: "infrastructure"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLAB_AZURE_PIPELINE_WEBHOOK: ${{ secrets.GITLAB_AZURE_PIPELINE_WEBHOOK }}
