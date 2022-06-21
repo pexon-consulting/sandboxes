@@ -32,6 +32,8 @@ jobs:
       # - name: install go-bindata
       #   run: go install github.com/jteeuwen/go-bindata/...@latest
       - name: ls
+        run: ls
+      - name: ls
         run: ls infrastructure
       - name: ls
         run: ls infrastructure/lambda
