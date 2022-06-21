@@ -3,7 +3,6 @@ name: "IaC - Build an Release"
 on:
   push:
     branches: [feature/release-2.0]
-    paths: [infrastructure/**, .github/**]
 
 permissions:
   id-token: write
