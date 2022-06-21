@@ -52,7 +52,6 @@ class GraphQLEndpoint(Construct):
             },
             bundling=go_lambda.BundlingOptions(
                 command_hooks=CommandHooks(),
-                docker_image=""
                 # forced_docker_bundling=True
             ),
             # module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
