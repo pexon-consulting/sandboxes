@@ -210,9 +210,16 @@ class AzureStepFunctionAdd(Construct):
                 "event": {"id.$": "$.[2].detail.id", "user.$": "$.[2].detail.user"},
             },
         )
-        create_job_state = DynamoTasks(scope, construct_id, table,
+        create_job_state = DynamoTasks(scope, f"dynamo_{construct_id}", table,
                                        enviroment).put_sandbox(AZURE_PREFIX)
         start_process.branch(create_job_state)
+
+        chain = sfn.Chain.start(start_process)
+
+        sfn_ = sfn.StateMachine(self, "provison_az_sandbox",
+                                definition=chain, timeout=Duration.minutes(5))
+
+        self.step_function = sfn_
 
 
 class SsoStepFunctionAdd(Construct):

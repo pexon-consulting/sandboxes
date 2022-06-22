@@ -40,7 +40,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: cdk install
-        run: cdk deploy "test/*"
+        run: cdk deploy "test/*" --require-approval never
 
       # - name: run unittests
       #   run: pytest --cov=./ --cov-report=xml
