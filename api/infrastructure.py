@@ -20,8 +20,7 @@ from variables import Enviroments
 @jsii.implements(go_lambda.ICommandHooks)
 class CommandHooks:
     def before_bundling(self, input_dir, output_dir):
-        return ["pwd", "ls -a"]
-        # ["go generate ./schema"]
+        return ["go generate ./schema"]
 
     def after_bundling(self, input_dir, output_dir):
         return []
@@ -52,7 +51,6 @@ class GraphQLEndpoint(Construct):
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
             bundling=go_lambda.BundlingOptions(command_hooks=CommandHooks(), forced_docker_bundling=True),
-            #  module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
         )
         # func = lambda_.Function(
         #     self,
