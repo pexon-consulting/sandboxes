@@ -39,6 +39,9 @@ jobs:
       - name: install all dependency
         run: pip install -r requirements-dev.txt
 
+      - name: install all dependency
+        run: pip install -r requirements.txt
+
       - name: cdk install
         run: cdk deploy "test/*"
       # - name: run unittests

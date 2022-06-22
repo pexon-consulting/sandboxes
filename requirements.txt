@@ -1,4 +1,3 @@
 aws-cdk-lib
 constructs
-aws_cdk
 aws_cdk.aws_lambda_go_alpha
