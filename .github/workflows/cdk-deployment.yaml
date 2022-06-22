@@ -14,6 +14,7 @@ jobs:
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v3
+
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -22,6 +23,7 @@ jobs:
 
       - name: cdk-aws
         run: npm install -g aws-cdk@latest
+
       - name: cdk version
         run: cdk version
       - name: init go
@@ -31,11 +33,6 @@ jobs:
       - name: install go-bindata
         run: go install github.com/jteeuwen/go-bindata/...@latest
 
-      - name: ls
-        run: npm install -g aws-cdk
-      - name: ls
-        run: ls -a lambda/graph-ql-api/go.mod
-
       - name: install all dependency
         run: pip install -r requirements-dev.txt
 
@@ -44,6 +41,7 @@ jobs:
 
       - name: cdk install
         run: cdk deploy "test/*"
+
       # - name: run unittests
       #   run: pytest --cov=./ --cov-report=xml
       # - name: update code-coverage
