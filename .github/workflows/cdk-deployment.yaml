@@ -14,25 +14,22 @@ jobs:
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v3
-      # - name: configure aws credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     role-to-assume: arn:aws:iam::063661473261:role/CICDPreperation-GitHubOIDCOIDCRole5001FAA8-3LWHM4EVGQP4
-      #     aws-region: eu-central-1
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::063661473261:role/CICDPreperation-GitHubOIDCOIDCRole5001FAA8-3LWHM4EVGQP4
+          aws-region: eu-central-1
 
-      # - name: Use Node.js
-      #   uses: actions/setup-node@v2
-      # - name: init go
-      #   uses: actions/setup-go@v2
       - name: cdk-aws
         run: npm install -g aws-cdk@latest
       - name: cdk version
         run: cdk version
-
-      #   with:
-      #     go-version: "^1.17.6" # The Go version to download (if necessary) and use.
-      # - name: install go-bindata
-      #   run: go install github.com/jteeuwen/go-bindata/...@latest
+      - name: init go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.17.6" # The Go version to download (if necessary) and use.
+      - name: install go-bindata
+        run: go install github.com/jteeuwen/go-bindata/...@latest
 
       - name: ls
         run: npm install -g aws-cdk
@@ -40,6 +37,9 @@ jobs:
         run: ls -a lambda/graph-ql-api/go.mod
       - name: install all dependency
         run: pip install -r requirements-dev.txt
+
+      - name: cdk install
+        run: cdk deploy "test/*"
       # - name: run unittests
       #   run: pytest --cov=./ --cov-report=xml
       # - name: update code-coverage
