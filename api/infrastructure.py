@@ -52,26 +52,8 @@ class GraphQLEndpoint(Construct):
             },
             bundling=go_lambda.BundlingOptions(
                 command_hooks=CommandHooks(),
-                # forced_docker_bundling=True
             ),
-            #  module_dir=f"/Users/max/Documents/pexon/sandboxes/infrastructure/lambda/graph-ql-api",
         )
-        # func = lambda_.Function(
-        #     self,
-        #     "lambda",
-        #     architecture=lambda_.Architecture.X86_64,
-        #     runtime=lambda_.Runtime.GO_1_X,
-        #     code=lambda_.Code.from_bucket(s3Bucket, f"lambda/{sha}.zip"),
-        #     handler="main",
-        #     timeout=Duration.seconds(30),
-        #     memory_size=128,
-        #     environment={
-        #         "multi_cloud_table": multi_cloud_table.table_name,
-        #         "gitlab_azure_pipeline_webhook": os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "NA"),
-        #         "event_source": eventHub.SOURCE,
-        #         "event_bus_name": eventHub.bus.event_bus_name,
-        #     },
-        # )
 
         multi_cloud_table.grant_read_write_data(func)
 
