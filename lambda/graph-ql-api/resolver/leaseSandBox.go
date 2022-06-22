@@ -69,8 +69,19 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		resp, err := http.PostForm(url, data)
 		if err != nil {
 			log.Fatal(err)
+			return nil, err
 		}
 		json.NewDecoder(resp.Body).Decode(&res)
+
+		svc := connection.GetEventBridgeClient(ctx)
+
+		event := api.Event{}
+
+		_, err = api.PutEvent(ctx, svc, &event)
+
+		if err != nil {
+			return nil, err
+		}
 
 		return &models.Sandbox{
 			Result: &models.AzureResolver{
@@ -86,7 +97,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 					SandboxName:   sandbox_name,
 				},
 			},
-		}, err
+		}, nil
 	}
 
 	// check if the Cloud is AWS

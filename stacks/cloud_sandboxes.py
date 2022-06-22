@@ -15,7 +15,7 @@ from variables import sandboxes, root_account, region, Enviroments
 from database.infrastructure import AWSTable
 from hosting.infrastructure import AWSSandBoxHosting
 from api.infrastructure import GraphQLEndpoint
-from sso_step_function.infrastructure import SsoStepFunctionAdd, SsoStepFunctionCronCleanUp, SsoStepFunctionRemove
+from sso_step_function.infrastructure import SsoStepFunctionAdd, AzureStepFunctionAdd, SsoStepFunctionCronCleanUp, SsoStepFunctionRemove
 
 from sso_handler.infrastructure import SSOHandler, SandboxGarbageCollector
 
@@ -93,7 +93,7 @@ class CloudSandboxes(Stack):
             detail={"user": [{"exists": True}], "action": ["add"]},
         )
 
-        azure_step_function = SsoStepFunctionAdd(
+        azure_step_function = AzureStepFunctionAdd(
             self,
             "AzureStepFunction",
             table=multi_cloud_table.table,
