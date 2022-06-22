@@ -179,7 +179,7 @@ func TestMain(m *testing.M) {
 
 	tableName := uuid.New().String()
 
-	os.Setenv("dynamodb_table", tableName)
+	os.Setenv("DYNAMODB_TABLE", tableName)
 	os.Setenv("LOCAL_DYNAMODB", "true")
 	os.Setenv("AWS_ACCESS_KEY_ID", "dummy")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "dummy")
