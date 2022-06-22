@@ -214,6 +214,13 @@ class AzureStepFunctionAdd(Construct):
                                        enviroment).put_sandbox(AZURE_PREFIX)
         start_process.branch(create_job_state)
 
+        chain = sfn.Chain.start(start_process)
+
+        sfn_ = sfn.StateMachine(self, "provison_az_sandbox",
+                                definition=chain, timeout=Duration.minutes(5))
+
+        self.step_function = sfn_
+
 
 class SsoStepFunctionAdd(Construct):
     def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, enviroment, **kwargs) -> None:
