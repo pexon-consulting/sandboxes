@@ -54,9 +54,9 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		Id:             string(graphqlId),
 		Assigned_until: *until,
 		Assigned_since: *since,
-		User:           jwt.Payload.Email,
+		User:           strings.ToLower(jwt.Payload.Email),
 		Action:         "add",
-		Cloud:          args.Cloud,
+		Cloud:          strings.ToLower(args.Cloud),
 	}
 
 	_, err := api.PutEvent(ctx, svc, &event)
