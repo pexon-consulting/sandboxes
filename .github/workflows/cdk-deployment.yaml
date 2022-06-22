@@ -35,6 +35,7 @@ jobs:
         run: npm install -g aws-cdk
       - name: ls
         run: ls -a lambda/graph-ql-api/go.mod
+
       - name: install all dependency
         run: pip install -r requirements-dev.txt
 
