@@ -50,7 +50,10 @@ class GraphQLEndpoint(Construct):
                 "event_source": eventHub.SOURCE,
                 "event_bus_name": eventHub.bus.event_bus_name,
             },
-            bundling=go_lambda.BundlingOptions(command_hooks=CommandHooks(), forced_docker_bundling=True),
+            bundling=go_lambda.BundlingOptions(
+                command_hooks=CommandHooks(),
+                # forced_docker_bundling=True
+            ),
         )
         # func = lambda_.Function(
         #     self,
