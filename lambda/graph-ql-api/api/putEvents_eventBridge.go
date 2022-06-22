@@ -17,6 +17,7 @@ type Event struct {
 	Action         string `json:"action"`
 	Assigned_until string `json:"assigned_until"`
 	Assigned_since string `json:"assigned_since"`
+	Cloud          string `json:"cloud"`
 }
 
 func PutEvent(ctx context.Context, svc EventbridgeAPI, event *Event) (*eventbridge.PutEventsOutput, error) {

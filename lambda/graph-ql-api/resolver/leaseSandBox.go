@@ -22,15 +22,14 @@ import (
 var valid bool
 
 func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
-	Email     string
 	LeaseTime string
 	Cloud     string
 }) (*models.Sandbox, error) {
 
-	valid = utils.ProofPexonMail(args.Email)
-	if !valid {
+	jwt, err = utils.RetrievJWTFromContext(ctx)
+	if err != nil {
 		// 🤦‍♀️
-		return nil, fmt.Errorf("no valid Pexon-Mail")
+		return nil, fmt.Errorf("no valid jwt")
 
 	}
 
@@ -53,13 +52,13 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	if args.Cloud == models.PublicCloud.GetAZURE() {
 		// do your logic here 🤡
 		since, until := utils.TimeRange(year, month, day)
-		state_name := strings.Replace(strings.Split(args.Email, "@")[0], ".", "-", 1)
+		state_name := strings.Replace(strings.Split(jwt.Payload.Email, "@")[0], ".", "-", 1)
 		sandbox_name := "rg-bootcamp-" + state_name
 		data := url.Values{
 			"rg_name":       {sandbox_name},
-			"trainee_email": {args.Email},
+			"trainee_email": {jwt.Payload.Email},
 			"removal_date":  {*until},
-			"created_by":    {args.Email},
+			"created_by":    {jwt.Payload.Email},
 		}
 
 		res := models.GitlabPipelineResponse{}
@@ -89,7 +88,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 					Id:            graphql.ID(uuid.New().String()),
 					AssignedUntil: *until,
 					AssignedSince: *since,
-					AssignedTo:    args.Email,
+					AssignedTo:    jwt.Payload.Email,
 					PipelineId:    strconv.Itoa(res.Id),
 					Status:        res.Status,
 					ProjectId:     strconv.Itoa(res.ProjectId),
@@ -103,6 +102,8 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	// check if the Cloud is AWS
 	if args.Cloud == models.PublicCloud.GetAWS() {
 
+		jwt, err = utils.RetrievJWTFromContext(ctx)
+
 		/*
 			create current time and the until time object
 		*/
@@ -110,7 +111,14 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 
 		svc := connection.GetEventBridgeClient(ctx)
 
-		event := api.Event{}
+		event := api.Event{
+			Id:             string(graphqlId),
+			Assigned_until: *until,
+			Assigned_since: *since,
+			User:           jwt.Payload.Email,
+			Action:         "add",
+			Cloud:          "aws",
+		}
 
 		_, err := api.PutEvent(ctx, svc, &event)
 		if err != nil {
@@ -123,7 +131,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 					Id:            graphqlId,
 					AssignedUntil: *until,
 					AssignedSince: *since,
-					AssignedTo:    args.Email,
+					AssignedTo:    jwt.Payload.Email,
 					State:         "requested",
 				},
 			},

@@ -40,7 +40,7 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 // 		ctx := context.TODO()
 // 		mock_handler := events.APIGatewayProxyRequest{
 // 			Headers: map[string]string{
-// 				"Authorization: Bearer": jwtString,
+// 				"Authorization": jwtString,
 // 			},
 // 			Body: string(b),
 // 		}

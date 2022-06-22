@@ -22,7 +22,7 @@ import (
 
 func init() {
 	os.Setenv("env", "test")
-	os.Setenv("dynamodb_table", "test")
+	os.Setenv("DYNAMODB_TABLE", "test")
 }
 
 var rootSchema = graphql.MustParseSchema(schema.GetRootSchema(), &resolver.Resolver{})

@@ -70,5 +70,6 @@ type Query {
 }
 
 type Mutation {
-  leaseSandBox(email: String!, leaseTime: String!, cloud: Cloud!): Sandbox!
+  leaseSandBox(leaseTime: String!, cloud: Cloud!): Sandbox!
+  returnSandbox(uuid: ID!): Boolean
 }
