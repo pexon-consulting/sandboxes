@@ -210,7 +210,7 @@ class AzureStepFunctionAdd(Construct):
                 "event": {"id.$": "$.[2].detail.id", "user.$": "$.[2].detail.user"},
             },
         )
-        create_job_state = DynamoTasks(scope, construct_id, table,
+        create_job_state = DynamoTasks(scope, f"dynamo_{construct_id}", table,
                                        enviroment).put_sandbox(AZURE_PREFIX)
         start_process.branch(create_job_state)
 
