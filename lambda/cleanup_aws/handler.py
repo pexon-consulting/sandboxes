@@ -1,3 +1,5 @@
+from json import JSONDecoder
+import json
 import logging
 import os
 import boto3
@@ -33,39 +35,47 @@ def handler(event=None, context=None):
                         subsegment.trace_id,
                     )
     logger.info(event)
-    sandbox_account_id = "051392121546"
     JUMP_ROLE_NAME = os.getenv("JUMP_ROLE_NAME")
 
-    try:
-        logger.info("try to assume **nukeJumpRole** role")
-        credentials_nuke_jump_role = assume_role(
-            # Replace role name and make it dynamic
-            "arn:aws:iam::172920935848:role/nukeJumpRole-ssosandboxroleC6FC6E16-191Q1CC7HKKGR",
-            boto3.client("sts"),
-        )
-        logger.info("successful assumed **nukeJumpRole** role")
-    except Exception as e:
-        logger.exception("fail to assume **nukeJumpRole** role")
-        logger.exception(e)
-        return {"statusCode": 400}
+    if event["Records"] and len(event["Records"]) > 0:
+        for record in event["Records"]:
+            body_raw = record["body"]
+            body = json.loads(body_raw)
+            sandbox_account_id = body["account_id"]
+            try:
+                logger.info("try to assume **nukeJumpRole** role")
+                credentials_nuke_jump_role = assume_role(
+                    # Replace role name and make it dynamic
+                    "arn:aws:iam::172920935848:role/nukeJumpRole-ssosandboxroleC6FC6E16-191Q1CC7HKKGR",
+                    boto3.client("sts"),
+                )
+                logger.info("successful assumed **nukeJumpRole** role")
+            except Exception as e:
+                logger.exception("fail to assume **nukeJumpRole** role")
+                logger.exception(e)
+                return {"statusCode": 400}
 
-    try:
-        logger.info(f"try to assume **OrganizationAccountAccessRole** role from account {sandbox_account_id}")
-        credentials_sandbox = assume_role(
-            f"arn:aws:iam::{sandbox_account_id}:role/OrganizationAccountAccessRole",
-            client_from_credentials("sts", credentials_nuke_jump_role),
-        )
-        logger.info(f"successful assumed **OrganizationAccountAccessRole** role  from account {sandbox_account_id}")
-    except Exception as e:
-        logger.exception(f"fail to assume **OrganizationAccountAccessRole** role  from account {sandbox_account_id}")
-        logger.exception(e)
-        return {"statusCode": 400}
+            try:
+                logger.info(f"try to assume **OrganizationAccountAccessRole** role from account {sandbox_account_id}")
+                credentials_sandbox = assume_role(
+                    f"arn:aws:iam::{sandbox_account_id}:role/OrganizationAccountAccessRole",
+                    client_from_credentials("sts", credentials_nuke_jump_role),
+                )
+                logger.info(
+                    f"successful assumed **OrganizationAccountAccessRole** role  from account {sandbox_account_id}"
+                )
+            except Exception as e:
+                logger.exception(
+                    f"fail to assume **OrganizationAccountAccessRole** role  from account {sandbox_account_id}"
+                )
+                logger.exception(e)
+                return {"statusCode": 400}
 
-    try:
-        cloud_nuke(credentials_sandbox)
-    except Exception as e:
-        logger.exception(e)
-        logger.exception(f"fail to nuke {sandbox_account_id}")
-        return {"statusCode": 400}
+            try:
+                cloud_nuke(credentials_sandbox)
+            except Exception as e:
+                logger.exception(e)
+                logger.exception(f"fail to nuke {sandbox_account_id}")
+                return {"statusCode": 400}
 
     return {"statusCode": 200}
