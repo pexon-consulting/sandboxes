@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
     aws_lambda_go_alpha as go_lambda,
+    aws_apigatewayv2_authorizers_alpha as authorizers,
 )
 import jsii
 from event_bus.infrastructure import EventHub
@@ -53,18 +54,20 @@ class GraphQLEndpoint(Construct):
             bundling=go_lambda.BundlingOptions(
                 command_hooks=CommandHooks(),
             ),
+            tracing=lambda_.Tracing.ACTIVE,
         )
 
         multi_cloud_table.grant_read_write_data(func)
 
         api = apigw.LambdaRestApi(
             self,
-            "GraphqlApi",
+            f"GraphqlApi-{enviroment.value}",
             handler=func,
             proxy=False,
             default_cors_preflight_options=apigw.CorsOptions(
                 allow_origins=apigw.Cors.ALL_ORIGINS, allow_methods=apigw.Cors.ALL_METHODS
             ),
+            deploy_options={"tracing_enabled": True, "stage_name": enviroment.value},
         )
 
         ssm_sandbox_domain_uri = ssm.StringParameter(

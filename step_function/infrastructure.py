@@ -67,7 +67,9 @@ class AzureStepFunctionAdd(Construct):
 
         chain = sfn.Chain.start(start_process)
 
-        sfn_ = sfn.StateMachine(self, "provison_az_sandbox", definition=chain, timeout=Duration.minutes(5))
+        sfn_ = sfn.StateMachine(
+            self, "provison_az_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
+        )
 
         self.step_function = sfn_
 
@@ -113,7 +115,9 @@ class AwsStepFunctionAdd(Construct):
 
         chain = sfn.Chain.start(start_process).next(create_sso_assignment)
 
-        sfn_ = sfn.StateMachine(self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5))
+        sfn_ = sfn.StateMachine(
+            self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
+        )
 
         pol = iam.PolicyStatement(
             actions=[
@@ -145,7 +149,13 @@ Cleanup Sandboxes
 
 class AWSRemoveWithID(sfn.StateMachineFragment):
     def __init__(
-        self, scope: Construct, construct_id: str, table: dynamodb.Table, aws_nuke_queue: sqs.Queue, **kwargs
+        self,
+        scope: Construct,
+        construct_id: str,
+        table: dynamodb.Table,
+        aws_nuke_queue: sqs.Queue,
+        enviroment,
+        **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
@@ -194,7 +204,10 @@ class AWSRemoveWithID(sfn.StateMachineFragment):
         )
         map.iterator(sso_delete_account_assignment_task)
 
-        parallel.branch(sso_list_account_assignments_task)
+        if enviroment == Enviroments.prod:
+            parallel.branch(sso_list_account_assignments_task)
+        else:
+            parallel.branch(sfn.Pass(self, "dummy account_assignments_task"))
 
         self._start_state = parallel
         self._end_states = parallel.end_states
@@ -279,7 +292,11 @@ class MultiCloudStepFunctionCleanupByCron(Construct):
         map_aws = sfn.Map(self, f"{AWS_PREFIX} map", items_path="$.output.Items", result_path=sfn.JsonPath.DISCARD)
 
         aws_remove_sso_with_account_id = AWSRemoveWithID(
-            self, f"{AWS_PREFIX} RemoveSSOWithAccountID", table=table, aws_nuke_queue=aws_nuke_queue
+            self,
+            f"{AWS_PREFIX} RemoveSSOWithAccountID",
+            table=table,
+            aws_nuke_queue=aws_nuke_queue,
+            enviroment=enviroment,
         )
 
         map_aws.iterator(aws_remove_sso_with_account_id)
@@ -309,12 +326,8 @@ class MultiCloudStepFunctionCleanupByCron(Construct):
         """
         chain = sfn.Chain.start(query_expired_sandboxes_parallel)
 
-        sfn_ = sfn.StateMachine(self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5))
-
-        sso_policy = iam.PolicyStatement(
-            actions=["sso:ListAccountAssignments", "sso:DeleteAccountAssignment"],
-            # TODO: add resources here
-            resources=["*"],
+        sfn_ = sfn.StateMachine(
+            self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
         )
 
         dynamo_query = iam.PolicyStatement(
@@ -323,9 +336,15 @@ class MultiCloudStepFunctionCleanupByCron(Construct):
             ],
             resources=[table.table_arn, f"{table.table_arn}/*"],
         )
-
-        sfn_.add_to_role_policy(sso_policy)
         sfn_.add_to_role_policy(dynamo_query)
+
+        if enviroment == Enviroments.prod:
+            sso_policy = iam.PolicyStatement(
+                actions=["sso:ListAccountAssignments", "sso:DeleteAccountAssignment"],
+                # TODO: add resources here
+                resources=["*"],
+            )
+            sfn_.add_to_role_policy(sso_policy)
         self.step_function = sfn_
 
 
@@ -342,24 +361,44 @@ class MultiCloudStepFunctionCleanupByEvent(Construct):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        aws_remove = AWSRemoveWithID(self, f"{AWS_PREFIX} AWSRemoveWithID", table=table, aws_nuke_queue=aws_nuke_queue)
+        aws_remove = AWSRemoveWithID(
+            self, f"{AWS_PREFIX} AWSRemoveWithID", table=table, aws_nuke_queue=aws_nuke_queue, enviroment=enviroment
+        )
 
         azure_remove = AzureRemoveWithID(
             self, f"{AZURE_PREFIX} AzureRemoveWithID", table=table, queue=azure_nuke_queue
         )
 
-        # TODO implement Query
-        query = sfn.Pass(self, "query exact event")
+        get_item = tasks.DynamoGetItem(
+            self,
+            "get item",
+            table=table,
+            key={
+                "assigned_to": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.detail.user")),
+                "id": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.detail.id")),
+            },
+            output_path="$.Item",
+        )
 
         choice = sfn.Choice(self, "if AWS or Azure Event")
 
-        choice.when(sfn.Condition.string_equals("$.cloud", "aws"), aws_remove)
-        choice.when(sfn.Condition.string_equals("$.cloud", "azure"), azure_remove)
+        choice.when(sfn.Condition.string_equals("$.cloud.S", "aws"), aws_remove)
+        choice.when(sfn.Condition.string_equals("$.cloud.S", "azure"), azure_remove)
 
         choice.otherwise(sfn.Fail(self, "fail-state"))
 
-        chain = sfn.Chain.start(query).next(choice)
+        chain = sfn.Chain.start(get_item).next(choice)
 
-        sfn_ = sfn.StateMachine(self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5))
+        sfn_ = sfn.StateMachine(
+            self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
+        )
+
+        if enviroment == Enviroments.prod:
+            sso_policy = iam.PolicyStatement(
+                actions=["sso:ListAccountAssignments", "sso:DeleteAccountAssignment"],
+                # TODO: add resources here
+                resources=["*"],
+            )
+            sfn_.add_to_role_policy(sso_policy)
 
         self.step_function = sfn_

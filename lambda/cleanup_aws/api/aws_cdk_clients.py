@@ -1,11 +1,18 @@
 import logging
 import boto3
 
-sts_client = boto3.client("sts")
+
+def client_from_credentials(client: str, credentials):
+    return boto3.client(
+        client,
+        aws_access_key_id=credentials["AccessKeyId"],
+        aws_secret_access_key=credentials["SecretAccessKey"],
+        aws_session_token=credentials["SessionToken"],
+    )
 
 
-def assume_role(RoleArn: str):
-    assume_role = sts_client.assume_role(
+def assume_role(RoleArn: str, client):
+    assume_role = client.assume_role(
         RoleArn=RoleArn,
         # Todo make this random
         RoleSessionName="cloud-nuke-lambda",

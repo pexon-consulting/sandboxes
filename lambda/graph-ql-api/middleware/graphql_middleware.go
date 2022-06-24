@@ -4,6 +4,7 @@ import (
 	"context"
 	"lambda/aws-sandbox/graph-ql-api/relay"
 	"lambda/aws-sandbox/graph-ql-api/utils"
+	"log"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -28,4 +29,11 @@ func BindJwtToContext(i relay.Middleware) relay.MiddlewareResponse {
 	ctx := context.WithValue(i.Ctx, utils.Jwt, jwt)
 
 	return relay.MiddlewareResponse{Ctx: ctx, Pass: true}
+}
+
+func LogHeader(i relay.Middleware) relay.MiddlewareResponse {
+
+	log.Println(i.Headers)
+
+	return relay.MiddlewareResponse{Ctx: i.Ctx, Pass: true}
 }

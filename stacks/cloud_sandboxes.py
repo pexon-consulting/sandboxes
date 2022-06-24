@@ -7,6 +7,7 @@ from aws_cdk import (
     aws_sqs as sqs,
     aws_lambda as lambda_,
     aws_lambda_event_sources as lambda_event_sources,
+    aws_lambda_python_alpha as lambda_python,
 )
 from event_bus.infrastructure import EventHub, EventHubCron
 
@@ -24,7 +25,6 @@ from step_function.infrastructure import (
 
 from sso_handler.infrastructure import SSOHandler, SandboxGarbageCollector
 
-from stacks.nuke_handler_cross_role import NukeHandlerCrossRole
 from stacks.sso_handler_cross_role import SSOHandlerCrossRole
 
 
@@ -34,6 +34,7 @@ class NukeLambdaWithQueue(Construct):
         scope: Construct,
         id: str,
         asset: str,
+        role: SSOHandlerCrossRole,
         **kwargs,
     ) -> None:
         super().__init__(scope, id, **kwargs)
@@ -41,18 +42,35 @@ class NukeLambdaWithQueue(Construct):
         duration = Duration.minutes(5)
 
         nuke_queue = sqs.Queue(self, "nuke_queue", visibility_timeout=duration)
-        nuke_lambda = lambda_.Function(
+        nuke_lambda = lambda_python.PythonFunction(
             self,
             "nuke_lambda",
             architecture=lambda_.Architecture.ARM_64,
             runtime=lambda_.Runtime.PYTHON_3_9,
-            code=lambda_.Code.from_asset(asset),
-            handler="handler.handler",
-            environment={},
+            entry=asset,
+            index="handler.py",
+            handler="handler",
+            environment={
+                "JUMP_ROLE_ARN": role.arn,
+                "JUMP_ROLE_NAME": role.role_name,
+                "LOGLEVEL": "INFO",
+                "DRY_RUN": "True",
+            },
             timeout=duration,
             memory_size=128,
+            tracing=lambda_.Tracing.ACTIVE,
+            insights_version=lambda_.LambdaInsightsVersion.from_insight_version_arn(
+                "arn:aws:lambda:eu-central-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
+            ),
         )
         nuke_lambda.add_event_source(lambda_event_sources.SqsEventSource(nuke_queue))
+
+        policy = iam.PolicyStatement(
+            actions=["sts:AssumeRole"],
+            # TODO: add resources here dynamic
+            resources=["arn:aws:iam::172920935848:role/nukeJumpRole-ssosandboxroleC6FC6E16-191Q1CC7HKKGR"],
+        )
+        nuke_lambda.add_to_role_policy(policy)
 
         self._lambda = nuke_lambda
         self.queue = nuke_queue
@@ -63,7 +81,7 @@ class CloudSandboxes(Stack):
         self,
         scope: Construct,
         id: str,
-        # nuke_roles: List[NukeHandlerCrossRole],
+        role: SSOHandlerCrossRole,
         enviroment: Enviroments,
         **kwargs,
     ) -> None:
@@ -82,21 +100,21 @@ class CloudSandboxes(Stack):
         # # # # # # # # # # # #
         # Cleanup Queue with Lambda: AWS / AZURE
         # # # # # # # # # # # #
-        aws_nuke_lambda = NukeLambdaWithQueue(self, "aws nukeLambda", asset="lambda/cleanup_aws")
-        azure_nuke_lambda = NukeLambdaWithQueue(self, "azure nukeLambda", asset="lambda/cleanup_azure")
+        aws_nuke_lambda = NukeLambdaWithQueue(self, "aws nukeLambda", asset="lambda/cleanup_aws", role=role)
+        azure_nuke_lambda = NukeLambdaWithQueue(self, "azure nukeLambda", asset="lambda/cleanup_azure", role=role)
 
         # # # # # # # # # # # #
         # Add by Event: AWS
         # # # # # # # # # # # #
         add_aws_step_function = AwsStepFunctionAdd(
             self,
-            "SsoStepFunction",
+            "AwsAddByEvent",
             table=multi_cloud_table.table,
             enviroment=enviroment,
         )
 
         eventHub.addRuleWithStepFunctionTarget(
-            id="AddAWSSandbox",
+            id="AwsAddByEventRule",
             sfnStepFunction=add_aws_step_function.step_function,
             detail={"user": [{"exists": True}], "action": ["add"], "cloud": ["aws"]},
         )
@@ -106,13 +124,13 @@ class CloudSandboxes(Stack):
         # # # # # # # # # # # #
         azure_aws_step_function = AzureStepFunctionAdd(
             self,
-            "AzureStepFunction",
+            "AzureAddByEvent",
             table=multi_cloud_table.table,
             enviroment=enviroment,
         )
 
         eventHub.addRuleWithStepFunctionTarget(
-            id="AddAzureSandbox",
+            id="AzureAddByEventRule",
             sfnStepFunction=azure_aws_step_function.step_function,
             detail={"user": [{"exists": True}], "action": ["add"], "cloud": ["azure"]},
         )
@@ -122,7 +140,7 @@ class CloudSandboxes(Stack):
         # # # # # # # # # # # #
         cleanup_event = MultiCloudStepFunctionCleanupByEvent(
             self,
-            "RemoveSsoStepFunction",
+            "MultiCloudCleanupByEvent",
             table=multi_cloud_table.table,
             aws_nuke_queue=aws_nuke_lambda.queue,
             azure_nuke_queue=azure_nuke_lambda.queue,
@@ -130,7 +148,7 @@ class CloudSandboxes(Stack):
         )
 
         eventHub.addRuleWithStepFunctionTarget(
-            id="RemoveAWSSandbox",
+            id="MultiCloudCleanupByEventRule",
             sfnStepFunction=cleanup_event.step_function,
             detail={"user": [{"exists": True}], "action": ["remove"]},
         )
@@ -140,13 +158,13 @@ class CloudSandboxes(Stack):
         # # # # # # # # # # # #
         cleanup_cron = MultiCloudStepFunctionCleanupByCron(
             self,
-            "SsoStepFunctionCronCleanUp",
+            "MultiCloudCleanupByCron",
             table=multi_cloud_table.table,
             aws_nuke_queue=aws_nuke_lambda.queue,
             azure_nuke_queue=azure_nuke_lambda.queue,
             enviroment=enviroment,
         )
-        EventHubCron(self, "EventHubCron", sfnStepFunction=cleanup_cron.step_function)
+        EventHubCron(self, "MultiCloudCleanupByCronRule", sfnStepFunction=cleanup_cron.step_function)
 
         """
         Graphql-Endpoint Backend

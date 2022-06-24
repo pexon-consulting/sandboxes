@@ -18,7 +18,7 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 
 	relay := &relay.Handler{GraphqlSchema: graphqlSchema}
 
-	return relay.ServeHTTP(ctx, request, customMW.BindJwtToContext), nil
+	return relay.ServeHTTP(ctx, request, customMW.BindJwtToContext, customMW.LogHeader), nil
 }
 
 // func init() {

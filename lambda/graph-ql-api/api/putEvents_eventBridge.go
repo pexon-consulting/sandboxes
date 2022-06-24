@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -37,12 +38,13 @@ func PutEvent(ctx context.Context, svc EventbridgeAPI, event *Event) (*eventbrid
 				DetailType:   aws.String("add event"),
 				Detail:       aws.String(string(b)),
 				EventBusName: aws.String(eventBusName),
-				TraceHeader:  aws.String("X-Amzn-Trace-Id"),
 			},
 		},
 	}
 
 	result, err := svc.PutEvents(ctx, input)
+
+	log.Println(&result.ResultMetadata)
 
 	if err != nil {
 		return nil, err
