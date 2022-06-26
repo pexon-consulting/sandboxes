@@ -13,12 +13,11 @@ from aws_cdk import (
 )
 
 from stacks.cloud_sandboxes import CloudSandboxes
-from stacks.nuke_handler_cross_role import NukeHandlerCrossRole
 from stacks.sso_handler_cross_role import SSOHandlerCrossRole
 from stacks.monitoring import Monitoring
 from stacks.cicd_preperation import CICDPreperation
 
-from variables import sandboxes, root_account, region, sso_account, Enviroments
+from variables import sandboxes, root_account, region, root_pexon, Enviroments
 
 env_EU = Environment(account=root_account, region=region)
 
@@ -30,44 +29,32 @@ Tags.of(app).add("app", "aws-sandbox-handler")
 
 
 class SandboxStage(Stage):
-    def __init__(self, scope, id: str, enviroment: Enviroments, *, env=None, outdir=None):
+    def __init__(self, scope, id: str, enviroment: Enviroments, role: SSOHandlerCrossRole, *, env=None, outdir=None):
         super().__init__(scope, id, env=env, outdir=outdir)
 
         Tags.of(self).add("stage", id)
 
-        # nuke_roles = None
-        # if enviroment == Enviroments.prod:
-        #     nuke_roles: List[NukeHandlerCrossRole] = []
-        #     for account in sandboxes:
-        #         # x = NukeHandlerCrossRole.loop(self, "asda")
-        #         role = NukeHandlerCrossRole(
-        #             self,
-        #             account["name"],
-        #             env={
-        #                 "account": account["id"],
-        #                 "region": region,
-        #             },
-        #         )
-        #         nuke_roles.append(role)
-
         sandbox = CloudSandboxes(
             self,
             "Sandbox",
-            # nuke_roles=nuke_roles,
+            role=role,
             enviroment=enviroment,
         )
-        # if nuke_roles:
-        #     for role in nuke_roles:
-        #         sandbox.add_dependency(role)
-
-        # monitoring = Monitoring(self, "Monitoring", functions=sandbox.functions)
-        # monitoring.add_dependency(sandbox)
+        self.stack = sandbox
 
 
-SandboxStage(app, Enviroments.prod.value, env=env_EU, enviroment=Enviroments.prod)
-SandboxStage(app, Enviroments.test.value, env=env_EU, enviroment=Enviroments.test)
+role = SSOHandlerCrossRole(
+    app,
+    "nukeJumpRole",
+    env={
+        "account": root_pexon,
+        "region": region,
+    },
+)
+cicd = CICDPreperation(app, "CICDPreperation", env=env_EU)
 
+prod = SandboxStage(app, Enviroments.prod.value, env=env_EU, enviroment=Enviroments.prod, role=role)
+test = SandboxStage(app, Enviroments.test.value, env=env_EU, enviroment=Enviroments.test, role=role)
 
-CICDPreperation(app, "CICDPreperation", env=env_EU)
 
 app.synth()
