@@ -1,0 +1,21 @@
+{
+  "Records": [
+    {
+      "messageId": "8573e6c8-ee10-4dcc-9de7-092104c1d492",
+      "receiptHandle": "AQEBjlLpS/l/AbPC3yYehYBBIagdSTC9y5YzI1CI64a6cTOnSqO8P8w3b5IwpPiFax8CUucEaSA7nxGCyowazD4kg5VKT5Ig2069vdt/DX+KH7Ir2qoU3cbJKnuWQWFCE+DBl+jPTFzVmOGxXSn0KGFfXq/RzkLbBg1Epk0XtSTHYsE0RN5JV70WDMMJIkjptzy8QdIJ9JKpK4fr+LpwqdGQj0wplg41iDeDHKa7pn+G83mq2Er+nu9jyKbGKI2JsLQzmS4wyKZxibP6qQOaIUigiIWNpqLcDbpFP4N+u6r+NJdjs6hf6PGP14aNmj5f690yU98mxKdEirwofv/XntCYBg5rjSX0qq8QEGi/4NMZNBTFtLUzQsurI1eNRWlx6QWc78qt8YbTVcnqp8n2kehHT8mCVGewAJbcJmlMTsjvvhef3QBuabn81oz4CMGC9ae1i5Iy7C5Yp9TSVNZTWz8Mtw==",
+      "body": "{\"cloud\":\"aws\",\"account_id\":\"208971950478\"}",
+      "attributes": {
+        "ApproximateReceiveCount": "2",
+        "AWSTraceHeader": "Root=1-62b55c50-51f1ef53103934387feb0860;Parent=2f297c1f678ab12d;Sampled=1",
+        "SentTimestamp": "1656052816989",
+        "SenderId": "AROAQ5UUE7XW6Q6NHFY7P:rQvzDFesFZelOPfGziKHbQkqJdmXhedx",
+        "ApproximateFirstReceiveTimestamp": "1656052816994"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "f8310c5ae2f15ff7b4534fad3d779a6f",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:eu-central-1:063661473261:test-Sandbox-awsnukeLambdanukequeueEC43378D-z82yD8H2hdtC",
+      "awsRegion": "eu-central-1"
+    }
+  ]
+}
