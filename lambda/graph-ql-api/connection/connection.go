@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
-	"github.com/aws/aws-xray-sdk-go/instrumentation/awsv2"
 )
 
 func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
@@ -50,7 +49,6 @@ func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
 	}
 
 	// Using the Config value, create the DynamoDB client
-
 	svc := dynamodb.NewFromConfig(cfg)
 
 	return svc
@@ -79,12 +77,10 @@ func GetEventBridgeClient(ctx context.Context) api.EventbridgeAPI {
 
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 
-	awsv2.AWSV2Instrumentor(&cfg.APIOptions)
-
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
-	log.Println(cfg.APIOptions)
+
 	return eventbridge.NewFromConfig(cfg)
 
 }

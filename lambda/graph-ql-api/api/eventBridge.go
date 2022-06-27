@@ -37,6 +37,7 @@ func PutEvent(ctx context.Context, svc EventbridgeAPI, event *Event) (*eventbrid
 				DetailType:   aws.String("sandbox event"),
 				Detail:       aws.String(string(b)),
 				EventBusName: aws.String(eventBusName),
+				TraceHeader:  aws.String("X-Amzn-Trace-Id"),
 			},
 		},
 	}
