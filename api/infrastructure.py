@@ -10,7 +10,7 @@ from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
     aws_lambda_go_alpha as go_lambda,
-    aws_apigatewayv2_authorizers_alpha as authorizers,
+    # aws_apigatewayv2_authorizers_alpha as authorizers,
 )
 import jsii
 from event_bus.infrastructure import EventHub

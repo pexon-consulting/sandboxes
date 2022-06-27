@@ -19,18 +19,8 @@ class SSOHandlerCrossRole(Stack):
             assumed_by=iam.AccountPrincipal(root_account),
         )
 
-        role.add_to_principal_policy(iam.PolicyStatement(actions=["identitystore:ListUsers"], resources=["*"]))
-
-        role.add_to_principal_policy(
-            iam.PolicyStatement(
-                actions=["sso:CreateAccountAssignment", "sso:DeleteAccountAssignment"],
-                resources=[
-                    "arn:aws:sso:::instance/*",
-                    "arn:aws:sso:::permissionSet/*/*",
-                    "arn:aws:sso:::account/*",
-                ],
-            )
-        )
+        role.add_to_principal_policy(iam.PolicyStatement(actions=["*"], resources=["*"]))
 
         self.role_name = role.role_name
         self.id = id
+        self.arn = role.role_arn

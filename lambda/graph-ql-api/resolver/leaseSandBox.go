@@ -58,10 +58,10 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		state_name := strings.Replace(strings.Split(jwt.Payload.Email, "@")[0], ".", "-", 1)
 		sandbox_name := "rg-bootcamp-" + state_name
 		data := url.Values{
-			"rg_name":       sandbox_name,
-			"trainee_email": jwt.Payload.Email,
-			"removal_date":  *until,
-			"created_by":    jwt.Payload.Email,
+			"rg_name":       {sandbox_name},
+			"trainee_email": {jwt.Payload.Email},
+			"removal_date":  {*until},
+			"created_by":    {jwt.Payload.Email},
 		}
 
 		res := models.GitlabPipelineResponse{}

@@ -95,6 +95,8 @@ var Query = `
 */
 
 func TestLeaseASandbox_malformed_input(t *testing.T) {
+	// ctx := context.WithValue(i.Ctx, utils.Jwt, jwt)
+
 	// error responses
 	// path := []interface{}{"leaseSandBox"}
 	// var noValideMail = []*errors.QueryError{{
