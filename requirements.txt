@@ -1,4 +1,5 @@
 aws-cdk-lib
 constructs
 aws_cdk.aws_lambda_go_alpha
+aws_cdk.aws_lambda_python_alpha
 aws_cdk.aws_apigatewayv2_authorizers_alpha
