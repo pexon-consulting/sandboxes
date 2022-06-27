@@ -1,26 +1,13 @@
 package resolver_test
 
-import (
-	"context"
-	"fmt"
-	"lambda/aws-sandbox/graph-ql-api/api"
-	"lambda/aws-sandbox/graph-ql-api/utils"
-	"os"
-	"testing"
-
-	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
-	eventbridgeTypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
-	"github.com/graph-gophers/graphql-go/errors"
-	"github.com/graph-gophers/graphql-go/gqltesting"
-)
-
 const ReturnSandboxQuery = `
 			mutation ReturnSandbox($uuid: ID!) {
 				returnSandbox(uuid: $uuid)
 			}
 	`
 
-func TestReturnSandbox_AWS_Successfully_Requested(t *testing.T) {
+/*
+	func TestReturnSandbox_AWS_Successfully_Requested(t *testing.T) {
 	os.Setenv("env", "test")
 
 	svc := api.MockedEventbridge{
@@ -64,3 +51,4 @@ func TestReturnSandbox_AWS_Successfully_Requested(t *testing.T) {
 		},
 	})
 }
+*/

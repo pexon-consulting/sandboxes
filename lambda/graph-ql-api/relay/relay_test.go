@@ -42,8 +42,6 @@ func TestServeMiddleware(t *testing.T) {
 		Body: ``,
 	}
 
-	relay := &relay.Handler{GraphqlSchema: graphqlSchema}
-
 	tests := []MockMiddlewareInput{
 		{
 			body: `{"errors":[{"message":"no operations in query document"}]}`, statusCode: 200, pass: true,
@@ -61,7 +59,9 @@ func TestServeMiddleware(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("evaluate middleware-%d: %s ", i, tt.body), func(t *testing.T) {
-			result := relay.ServeHTTP(context.TODO(), request, MockMiddleware(tt))
+			relayHandler := &relay.Handler{GraphqlSchema: graphqlSchema}
+			relayHandler.Middleware = append(relayHandler.Middleware, MockMiddleware(tt))
+			result := relayHandler.ServeHTTP(context.TODO(), request)
 			resultBody := result.Body == tt.body
 			statusCode := result.StatusCode == tt.statusCode
 			if !(statusCode && resultBody) {

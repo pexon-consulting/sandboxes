@@ -267,6 +267,7 @@ func stringPointer(s string) *string {
 }
 
 func TestQuery(t *testing.T) {
+	os.Setenv("DISABLE_TRACE", "true")
 	ctx := context.TODO()
 	svc := connection.GetDynamoDbClient(ctx)
 

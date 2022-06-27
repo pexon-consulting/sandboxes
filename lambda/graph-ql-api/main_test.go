@@ -22,8 +22,9 @@ func TestHandler(t *testing.T) {
 	result, err := Handler(ctx, request)
 
 	resultErr := err == nil
-	resultBody := result.Body == `{"errors":[{"message":"no operations in query document"}]}`
-	statusCode := result.StatusCode == 200
+	// resultBody := result.Body == `{"errors":[{"message":"no operations in query document"}]}`
+	resultBody := result.Body == `no JWT provided`
+	statusCode := result.StatusCode == 403
 
 	if !(statusCode && resultBody && resultErr) {
 		t.Fatalf(fmt.Sprintf("expect statuscode 200 but got %v", result.StatusCode))

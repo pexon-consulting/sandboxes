@@ -23,7 +23,6 @@ func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
 		} else {
 			return api.MockedDynamoDB{}
 		}
-
 	}
 	region := config.WithRegion("eu-central-1")
 	optFns := []func(*config.LoadOptions) error{region}
@@ -39,7 +38,12 @@ func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
 
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 
-	awsv2.AWSV2Instrumentor(&cfg.APIOptions)
+	/*
+		only insturment in production
+	*/
+	if os.Getenv("DISABLE_TRACE") != "true" {
+		awsv2.AWSV2Instrumentor(&cfg.APIOptions)
+	}
 
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)

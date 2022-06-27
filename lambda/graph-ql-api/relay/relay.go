@@ -10,8 +10,11 @@ import (
 
 var global_ctx context.Context
 
+type MiddlewareFunc func(Middleware) MiddlewareResponse
+
 type Handler struct {
 	GraphqlSchema *graphql.Schema
+	Middleware    []MiddlewareFunc
 }
 
 type Params struct {
@@ -33,25 +36,25 @@ type MiddlewareResponse struct {
 	Response *events.APIGatewayProxyResponse
 }
 
-func (h *Handler) ServeHTTP(ctx context.Context, r events.APIGatewayProxyRequest, optFns ...func(Middleware) MiddlewareResponse) events.APIGatewayProxyResponse {
+func (h *Handler) ServeHTTP(ctx context.Context, r events.APIGatewayProxyRequest) events.APIGatewayProxyResponse {
 	params := Params{}
 	json.Unmarshal([]byte(r.Body), &params)
 	global_ctx = ctx
 
-	for _, item := range optFns {
+	for _, middlewareResolver := range h.Middleware {
 		middleware := Middleware{
 			Ctx:     global_ctx,
 			Schema:  h.GraphqlSchema,
 			Params:  params,
 			Headers: r.Headers,
 		}
-		x := item(middleware)
+		result := middlewareResolver(middleware)
 
-		if !x.Pass {
-			return *x.Response
+		if !result.Pass {
+			return *result.Response
 		}
 
-		global_ctx = x.Ctx
+		global_ctx = result.Ctx
 	}
 
 	response := h.GraphqlSchema.Exec(global_ctx, params.Query, params.OperationName, params.Variables)

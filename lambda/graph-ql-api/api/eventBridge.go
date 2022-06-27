@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -35,7 +34,7 @@ func PutEvent(ctx context.Context, svc EventbridgeAPI, event *Event) (*eventbrid
 		Entries: []types.PutEventsRequestEntry{
 			{
 				Source:       aws.String(source),
-				DetailType:   aws.String("add event"),
+				DetailType:   aws.String("sandbox event"),
 				Detail:       aws.String(string(b)),
 				EventBusName: aws.String(eventBusName),
 			},
@@ -43,8 +42,6 @@ func PutEvent(ctx context.Context, svc EventbridgeAPI, event *Event) (*eventbrid
 	}
 
 	result, err := svc.PutEvents(ctx, input)
-
-	log.Println(&result.ResultMetadata)
 
 	if err != nil {
 		return nil, err

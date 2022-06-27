@@ -62,7 +62,7 @@ func RetrievJWTFromContext(ctx context.Context) (JwtItem, error) {
 	if b {
 		return jwt, nil
 	} else {
-		return JwtItem{}, nil
+		return JwtItem{}, fmt.Errorf("no valid jwt")
 	}
 
 }

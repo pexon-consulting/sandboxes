@@ -20,10 +20,12 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	LeaseTime string
 	Cloud     string
 }) (*models.Sandbox, error) {
+	logger.Info("call LeaseSandBox")
 
 	jwt, err = utils.RetrievJWTFromContext(ctx)
 	if err != nil {
 		// 🤦‍♀️
+		logger.Warn("no valid jwt")
 		return nil, fmt.Errorf("no valid jwt")
 
 	}
@@ -31,6 +33,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	valid = utils.Lease_time_Input(args.LeaseTime)
 	if !valid {
 		// 🤦‍♀️
+		logger.Warn("Lease-Time is not correct")
 		return nil, fmt.Errorf("Lease-Time is not correct")
 	}
 
@@ -58,12 +61,15 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 		Action:         "add",
 		Cloud:          strings.ToLower(args.Cloud),
 	}
+	logger.Info(fmt.Printf("send event for %s", jwt.Payload.Email))
 
 	_, err := api.PutEvent(ctx, svc, &event)
 	if err != nil {
+		logger.Error(err)
 		return nil, err
 	}
 
+	logger.Info("return leaseSandbox")
 	return &models.Sandbox{
 		Result: &models.AwsResolver{
 			U: models.AwsSandbox{
