@@ -12,6 +12,10 @@ from aws_cdk import (
     aws_iam as iam,
 )
 
+from stacks.nuke_handler_cross_role import NukeHandlerCrossRole
+
+from variables import Enviroments
+
 
 class GitHubOIDC(Construct):
     def __init__(
@@ -34,9 +38,7 @@ class GitHubOIDC(Construct):
             assumed_by=iam.FederatedPrincipal(
                 federated=provider.open_id_connect_provider_arn,
                 assume_role_action="sts:AssumeRoleWithWebIdentity",
-                conditions={
-                    "StringLike": {"token.actions.githubusercontent.com:sub": "repo:pexon-consulting/sandboxes:*"}
-                },
+                conditions={"StringLike": {"token.actions.githubusercontent.com:sub": "repo:pexon-consulting/sandboxes:*"}},
             ),
         )
 

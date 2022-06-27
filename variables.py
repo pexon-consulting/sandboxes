@@ -20,6 +20,6 @@ sandboxes: List[Sandbox] = [
     # {"name": "test4", "id": "815837829183"},
 ]
 
-root_pexon = str("172920935848")
+sso_account = str("172920935848")
 root_account = str("063661473261")
 region = str("eu-central-1")
