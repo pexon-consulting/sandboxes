@@ -1,9 +1,8 @@
 from distutils import util
+import json
 import logging
 import os
 import subprocess
-
-logger = logging.getLogger()
 
 
 def cloud_nuke(credentials) -> bool:
@@ -14,29 +13,27 @@ def cloud_nuke(credentials) -> bool:
         "AWS_SECRET_ACCESS_KEY": credentials["SecretAccessKey"],
         "AWS_SESSION_TOKEN": credentials["SessionToken"],
     }
-
     try:
-        dry_run = util.strtobool(os.getenv("DRY_RUN", "True").lower())
+        dry_run = util.strtobool(os.getenv("dry_run", False).lower())
     except Exception as e:
-        logger.error(f'Fail to parse env-var "DRY_RUN" not a bool value')
+        logging.error(f'Fail to parse env-var "dry_run" not a bool value')
         raise
 
     command = "--dry-run" if dry_run else "--force"
-    cloud_nuke_tool = os.getenv("cloud_nuke", "cloud-nuke")
-    LOG_LEVEL = os.getenv("LOG_LEVEL", "info")
 
     try:
         if lambda_key != env["AWS_ACCESS_KEY_ID"]:
-            logger.debug("run")
+            logging.debug("")
             subprocess.check_call(
                 [
-                    f"./{cloud_nuke_tool} aws {command} --log-level {LOG_LEVEL} --region eu-central-1 --config ./cloud_nuke_config.yaml"
+                    f"./cloud-nuke_darwin_arm64 aws --dry-run --log-level debug --region eu-central-1 --config ./cloud_nuke_config.yaml"
                 ],
                 shell=True,
                 env=env,
             )
+            # subprocess.check_call([f"./cloud-nuke aws {command} --log-level error"], shell=True, env=env)
         return True
 
     except Exception as e:
-        logger.error(f"Fail to call cloud-nuke: {e}")
+        logging.error(f"Fail to call cloud-nuke: {e}")
         raise

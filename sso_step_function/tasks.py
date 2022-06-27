@@ -12,7 +12,7 @@ def dynamo_db_query_task(app, id: str, table: dynamodb.Table):
             "FilterExpression": "aws.account_id = :account_id AND assigned_until > :assigned_until",
             "ExpressionAttributeValues": {
                 ":cloud": {"S": "aws"},
-                ":state": {"S": "accounted"},
+                ":state": {"S": "sandbox_accounted"},
                 ":account_id": {"S.$": "$.Id"},
                 ":assigned_until": {"S.$": "$$.Execution.StartTime"},
             },
@@ -137,7 +137,7 @@ def dynamodb_query_expired_sandboxes(app, id: str, table: dynamodb.Table, cloud:
             "FilterExpression": "assigned_until <= :assigned_until",
             "ExpressionAttributeValues": {
                 ":cloud": {"S": cloud},
-                ":state": {"S": "accounted"},
+                ":state": {"S": "sandbox_accounted"},
                 ":assigned_until": {"S.$": "$.time"},
             },
             "ExpressionAttributeNames": {"#order_state": "state"},
