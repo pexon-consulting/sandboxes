@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 	"fmt"
+	"lambda/aws-sandbox/graph-ql-api/log"
 	"lambda/aws-sandbox/graph-ql-api/models"
-	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -63,13 +63,14 @@ func ComparisonOperatorFilterBuilder(filter models.ComparisonOperator, attribute
 }
 
 func QuerySandboxForUser(ctx context.Context, svc DynamoAPI, email string, filter models.ListSandboxesFilter) (items []models.SandboxItem) {
+	logger := log.GetGlobalLogger(ctx).SetPackage("Api").SetFunction("QuerySandboxForUser").Builder()
 
 	items = []models.SandboxItem{}
 
 	defer func() {
 		// defer function to escape the panic
 		if r := recover(); r != nil {
-			log.Println("QuerySandboxForUser:", r)
+			logger.Error(fmt.Sprintf("QuerySandboxForUser: %o", r))
 			items = []models.SandboxItem{}
 		}
 	}()
@@ -77,8 +78,7 @@ func QuerySandboxForUser(ctx context.Context, svc DynamoAPI, email string, filte
 	table := os.Getenv("DYNAMODB_TABLE")
 
 	if len(table) == 0 {
-		err := fmt.Errorf("env-variable dynamodb_table is empty")
-		log.Print(fmt.Errorf("ERROR: failed to find table-name %v", err))
+		logger.Error("failed to find table-name, env-variable DYNAMODB_TABLE is empty")
 		return items
 	}
 
@@ -90,6 +90,7 @@ func QuerySandboxForUser(ctx context.Context, svc DynamoAPI, email string, filte
 	var arrayExpression []string = []string{}
 
 	if len(filter.State) != 0 {
+		logger.Info("Build State Filter")
 		for _, item := range filter.State {
 			key := fmt.Sprintf(":key_%s", *item)
 			ExpressionAttributeValues[key] = &types.AttributeValueMemberS{Value: strings.ToLower(*item)}
@@ -118,25 +119,28 @@ func QuerySandboxForUser(ctx context.Context, svc DynamoAPI, email string, filte
 	}
 
 	if len(FilterExpression) != 0 {
+		logger.Info("Build FilterExpression")
 		k := strings.Join(FilterExpression, " AND ")
 		input.FilterExpression = aws.String(k)
 	}
 
 	if len(ExpressionAttributeNames) != 0 {
+		logger.Info("attach ExpressionAttributeNames")
 		input.ExpressionAttributeNames = ExpressionAttributeNames
 	}
 
+	logger.Info("run dynamoDB-Query")
 	query, err := svc.Query(ctx, &input)
 
 	if err != nil {
-		log.Print(fmt.Errorf("ERROR: failed to Query DynamoDB %v", err))
+		logger.Error(fmt.Sprintf("fail to Query DynamoDB %s", err.Error()))
 		return items
 	}
 
 	err = attributevalue.UnmarshalListOfMaps(query.Items, &items)
 
 	if err != nil {
-		log.Print(fmt.Errorf("ERROR: failed to unmarshal Dynamodb Scan Items, %v", err))
+		logger.Error(fmt.Sprintf("fail to unmarshal Dynamodb Scan Items, %s", err.Error()))
 		return []models.SandboxItem{}
 	}
 	return items

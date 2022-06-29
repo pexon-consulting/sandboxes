@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"io/ioutil"
+	"lambda/aws-sandbox/graph-ql-api/log"
 	logger "lambda/aws-sandbox/graph-ql-api/log"
 	"lambda/aws-sandbox/graph-ql-api/middleware"
 	"lambda/aws-sandbox/graph-ql-api/relay"
@@ -30,9 +31,13 @@ func Handler(ctx context.Context, request events.APIGatewayProxyRequest) (events
 	graphqlSchema := graphql.MustParseSchema(schema.GetRootSchema(), &resolver.Resolver{})
 
 	relay := &relay.Handler{GraphqlSchema: graphqlSchema, Middleware: []relay.MiddlewareFunc{
+		middleware.BindLogger,
 		middleware.BindJwtToContext,
-		middleware.LogHeader,
 	}}
+
+	logger := log.GetGlobalLogger(ctx).SetPackage("Main").Builder()
+
+	logger.Info("test")
 
 	return relay.ServeHTTP(ctx, request), nil
 }
@@ -49,7 +54,8 @@ func local() {
 		ctx := context.TODO()
 		mock_handler := events.APIGatewayProxyRequest{
 			Headers: map[string]string{
-				"Authorization": strings.Join(r.Header["Authorization"], " "),
+				"Authorization":   strings.Join(r.Header["Authorization"], " "),
+				"X-Amzn-Trace-Id": strings.Join(r.Header["X-Amzn-Trace-Id"], " "),
 			},
 			Body: string(b),
 		}
@@ -61,12 +67,12 @@ func local() {
 }
 
 func main() {
-	log := logger.GetLogger(logger.LogConfig{Package: "main"})
 
 	dev := flag.Bool("dev", false, "start local dev server")
 	flag.Parse()
 	if *dev {
-		log.Info("start dev-server")
+		logConfig := logger.LogConfig{Package: "dev"}
+		logConfig.SetPackage("dev").Builder().Info("start dev-server")
 		local()
 	}
 	// request := events.APIGatewayProxyRequest{}

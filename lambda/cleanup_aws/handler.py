@@ -16,7 +16,6 @@ from utils.cloud_nuke import cloud_nuke
 LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 logger = logging.getLogger()
 logger.setLevel(level=LOGLEVEL)
-
 patch_all()
 
 

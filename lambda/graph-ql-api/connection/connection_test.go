@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"lambda/aws-sandbox/graph-ql-api/api"
 	"lambda/aws-sandbox/graph-ql-api/connection"
-	"lambda/aws-sandbox/graph-ql-api/utils"
+	"lambda/aws-sandbox/graph-ql-api/settings"
 	"os"
 	"reflect"
 	"testing"
@@ -64,7 +64,7 @@ func TestGetDynamoDbClientMockClient(t *testing.T) {
 		t.Run(fmt.Sprintf("testcase %d, contain %s items", i, tt.env), func(t *testing.T) {
 			os.Setenv("env", tt.env)
 
-			ctx := context.WithValue(context.TODO(), utils.SvcClient, api.MockedDynamoDB{})
+			ctx := context.WithValue(context.TODO(), settings.SvcClient, api.MockedDynamoDB{})
 			svc := connection.GetDynamoDbClient(ctx)
 
 			result := reflect.TypeOf(svc) == reflect.TypeOf(api.MockedDynamoDB{})
@@ -127,7 +127,7 @@ func TestGetEventBridgeClientMockClient(t *testing.T) {
 		t.Run(fmt.Sprintf("testcase %d, contain %s items", i, tt.env), func(t *testing.T) {
 			os.Setenv("env", tt.env)
 
-			ctx := context.WithValue(context.TODO(), utils.SvcClient, api.MockedEventbridge{})
+			ctx := context.WithValue(context.TODO(), settings.SvcClient, api.MockedEventbridge{})
 			svc := connection.GetEventBridgeClient(ctx)
 
 			result := reflect.TypeOf(svc) == reflect.TypeOf(api.MockedEventbridge{})

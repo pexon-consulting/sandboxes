@@ -3,7 +3,7 @@ package connection
 import (
 	"context"
 	"lambda/aws-sandbox/graph-ql-api/api"
-	"lambda/aws-sandbox/graph-ql-api/utils"
+	"lambda/aws-sandbox/graph-ql-api/settings"
 	"log"
 	"os"
 
@@ -16,7 +16,7 @@ import (
 
 func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
 	if os.Getenv("env") == "test" {
-		svcUntyped := ctx.Value(utils.SvcClient)
+		svcUntyped := ctx.Value(settings.SvcClient)
 		svc, b := svcUntyped.(api.MockedDynamoDB)
 		if b {
 			return svc
@@ -57,7 +57,7 @@ func GetDynamoDbClient(ctx context.Context) api.DynamoAPI {
 
 func GetEventBridgeClient(ctx context.Context) api.EventbridgeAPI {
 	if os.Getenv("env") == "test" {
-		svcUntyped := ctx.Value(utils.SvcClient)
+		svcUntyped := ctx.Value(settings.SvcClient)
 		svc, b := svcUntyped.(api.MockedEventbridge)
 		if b {
 			return svc

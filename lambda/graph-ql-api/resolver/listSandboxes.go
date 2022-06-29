@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"lambda/aws-sandbox/graph-ql-api/api"
 	"lambda/aws-sandbox/graph-ql-api/connection"
+	"lambda/aws-sandbox/graph-ql-api/log"
 	"lambda/aws-sandbox/graph-ql-api/models"
 	"lambda/aws-sandbox/graph-ql-api/utils"
 
@@ -34,12 +35,17 @@ func resolvFilter(f models.ListSandboxesFilter, inputF *models.ListSandboxesFilt
 func (*Resolver) ListSandboxes(ctx context.Context, args struct {
 	Filter *models.ListSandboxesFilterInput
 }) (*models.ListSandboxes, error) {
+	logger := log.GetGlobalLogger(ctx).SetPackage("Resolver").SetResolver("ListSandboxes").Builder()
+
+	logger.Info("list Sandboxes")
+
 	filter := resolvFilter(models.ListSandboxesFilter{}, args.Filter)
 
 	jwt, err := utils.RetrievJWTFromContext(ctx)
 
 	if err != nil {
 		// 🤦‍♀️
+		logger.Warn("cant retrive JWT from Context")
 		return nil, fmt.Errorf("internal Server Error")
 	}
 

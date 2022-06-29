@@ -6,7 +6,7 @@ import (
 	"lambda/aws-sandbox/graph-ql-api/api"
 	"lambda/aws-sandbox/graph-ql-api/resolver"
 	"lambda/aws-sandbox/graph-ql-api/schema"
-	"lambda/aws-sandbox/graph-ql-api/utils"
+	"lambda/aws-sandbox/graph-ql-api/settings"
 	"os"
 	"testing"
 
@@ -129,7 +129,7 @@ func TestLeaseASandbox_malformed_input(t *testing.T) {
 	for i, test := range tests {
 		t.Run(fmt.Sprintf("testcase %d, testname %s", i, test.testname), func(t *testing.T) {
 			ctx := context.TODO()
-			ctx = context.WithValue(ctx, utils.SvcClient, test.svc)
+			ctx = context.WithValue(ctx, settings.SvcClient, test.svc)
 			gqltesting.RunTest(t, &gqltesting.Test{
 				Context:        ctx,
 				Schema:         rootSchema,

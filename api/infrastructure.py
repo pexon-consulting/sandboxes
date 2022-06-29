@@ -67,7 +67,11 @@ class GraphQLEndpoint(Construct):
             default_cors_preflight_options=apigw.CorsOptions(
                 allow_origins=apigw.Cors.ALL_ORIGINS, allow_methods=apigw.Cors.ALL_METHODS
             ),
-            deploy_options={"tracing_enabled": True, "stage_name": enviroment.value},
+            deploy_options={
+                "tracing_enabled": True,
+                "stage_name": enviroment.value,
+                "logging_level": apigw.MethodLoggingLevel.ERROR,
+            },
         )
 
         ssm_sandbox_domain_uri = ssm.StringParameter(

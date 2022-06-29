@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"lambda/aws-sandbox/graph-ql-api/api"
 	"lambda/aws-sandbox/graph-ql-api/connection"
+	"lambda/aws-sandbox/graph-ql-api/log"
 	"lambda/aws-sandbox/graph-ql-api/models"
 	"lambda/aws-sandbox/graph-ql-api/utils"
-	"log"
+
 	"net/http"
 	"net/url"
 	"os"
@@ -25,6 +26,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 	LeaseTime string
 	Cloud     string
 }) (*models.Sandbox, error) {
+	logger := log.GetGlobalLogger(ctx).SetPackage("Resolver").SetResolver("LeaseSandBox").Builder()
 	logger.Info("call LeaseSandBox")
 
 	jwt, err = utils.RetrievJWTFromContext(ctx)
@@ -70,7 +72,7 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 
 		resp, err := http.PostForm(url, data)
 		if err != nil {
-			log.Fatal(err)
+			logger.Fatal(err)
 			return nil, err
 		}
 		json.NewDecoder(resp.Body).Decode(&res)
