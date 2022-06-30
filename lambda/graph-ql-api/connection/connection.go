@@ -78,6 +78,13 @@ func GetEventBridgeClient(ctx context.Context) api.EventbridgeAPI {
 
 	cfg, err := config.LoadDefaultConfig(ctx, optFns...)
 
+	/*
+		only insturment in production
+	*/
+	if os.Getenv("DISABLE_TRACE") != "true" {
+		awsv2.AWSV2Instrumentor(&cfg.APIOptions)
+	}
+
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
