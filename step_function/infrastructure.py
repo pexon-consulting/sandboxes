@@ -11,6 +11,7 @@ from aws_cdk import (
     aws_stepfunctions_tasks as tasks,
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
+    aws_lambda as _lambda,
 )
 
 from step_function.tasks import (
@@ -27,7 +28,7 @@ sandbox_0_is_present = sfn.Condition.is_present("$.sandboxes[0]")
 
 
 class DynamoTasks(Construct):
-    def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, enviroment, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, enviroment=None, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         self.table = table
 
@@ -52,20 +53,52 @@ class DynamoTasks(Construct):
 
 
 class AzureStepFunctionAdd(Construct):
-    def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, enviroment, **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        construct_id: str,
+        table: dynamodb.Table,
+        function: _lambda.Function,
+        enviroment,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        start_process = sfn.Parallel(
+        PREFIX = "azure"
+
+        start_process = sfn.Parallel(self, "start process", result_path="$.parallel")
+
+        create_job = DynamoTasks(scope, f"create_job", table, enviroment).put_sandbox(AZURE_PREFIX)
+        start_process.branch(create_job)
+        api_proxy = tasks.LambdaInvoke(self, "lambda-invoke", lambda_function=function, input_path="$.detail")
+        start_process.branch(api_proxy)
+
+        dynamo_update_azure_response = tasks.DynamoUpdateItem(
             self,
-            "start process",
-            result_selector={
-                "sandboxes.$": "$.[1].sandboxes",
-                "event": {"id.$": "$.[2].detail.id", "user.$": "$.[2].detail.user"},
+            "dynamo update status and account id",
+            table=table,
+            key={
+                "assigned_to": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.detail.user")),
+                "id": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.detail.id")),
+            },
+            expression_attribute_names={"#order_status": "state"},
+            update_expression="SET #order_status = :state, azure = :azure",
+            expression_attribute_values={
+                ":state": tasks.DynamoAttributeValue.from_string("accounted"),
+                ":azure": tasks.DynamoAttributeValue.map_from_json_path("$.parallel[1].Payload"),
+                # tasks.DynamoAttributeValue.from_map(
+                #     {
+                #         "pipeline-id": tasks.DynamoAttributeValue.from_string(
+                #             sfn.JsonPath.string_at("$.parallel[1].Payload.pipeline-id")
+                #         ),
+                #         "azure-magic": tasks.DynamoAttributeValue.from_string(
+                #             sfn.JsonPath.string_at("$.parallel[1].Payload.azure-magic")
+                #         ),
+                #     }
+                # ),
             },
         )
-        create_job_state = DynamoTasks(scope, f"dynamo_{construct_id}", table, enviroment).put_sandbox(AZURE_PREFIX)
-        start_process.branch(create_job_state)
 
-        chain = sfn.Chain.start(start_process)
+        chain = sfn.Chain.start(start_process).next(dynamo_update_azure_response)
 
         sfn_ = sfn.StateMachine(
             self, "provison_az_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
@@ -222,12 +255,15 @@ class AWSRemoveWithID(sfn.StateMachineFragment):
 
 
 class AzureRemoveWithID(sfn.StateMachineFragment):
-    def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, queue: sqs.Queue, **kwargs) -> None:
+    def __init__(
+        self, scope: Construct, construct_id: str, table: dynamodb.Table, function: _lambda.Function, **kwargs
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         PREFIX = "azure"
 
-        parallel = sfn.Parallel(self, f"{PREFIX} parallel")
+        api_proxy = tasks.LambdaInvoke(self, "lambda-invoke", lambda_function=function)
+
 
         update_state = tasks.DynamoUpdateItem(
             self,
@@ -241,20 +277,10 @@ class AzureRemoveWithID(sfn.StateMachineFragment):
                 "id": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.id.S")),
             },
         )
-        parallel.branch(update_state)
-
-        send_message = tasks.SqsSendMessage(
-            self,
-            f"{PREFIX} sqs nuke aws",
-            queue=queue,
-            message_body=sfn.TaskInput.from_object(
-                {"cloud": f"{PREFIX}", "account_id": sfn.JsonPath.string_at("$.aws.M.account_id.S")}
-            ),
-        )
-        parallel.branch(send_message)
-
-        self._start_state = parallel
-        self._end_states = parallel.end_states
+        api_proxy.next(update_state)
+        
+        self._start_state = api_proxy
+        self._end_states = update_state.end_states
 
     @property
     def start_state(self):
@@ -272,7 +298,7 @@ class MultiCloudStepFunctionCleanupByCron(Construct):
         construct_id: str,
         table: dynamodb.Table,
         aws_nuke_queue: sqs.Queue,
-        azure_nuke_queue: sqs.Queue,
+        azure_nuke_function: _lambda.Function,
         enviroment,
         **kwargs,
     ) -> None:
@@ -314,7 +340,7 @@ class MultiCloudStepFunctionCleanupByCron(Construct):
         map_azure = sfn.Map(self, f"{AZURE_PREFIX} map", items_path="$.output.Items", result_path=sfn.JsonPath.DISCARD)
 
         azure_remove_sso_with_account_id = AzureRemoveWithID(
-            self, f"{AZURE_PREFIX} RemoveSSOWithAccountID", table=table, queue=azure_nuke_queue
+            self, f"{AZURE_PREFIX} RemoveSSOWithAccountID", table=table, function=azure_nuke_function
         )
 
         map_azure.iterator(azure_remove_sso_with_account_id)
@@ -355,7 +381,7 @@ class MultiCloudStepFunctionCleanupByEvent(Construct):
         construct_id: str,
         table: dynamodb.Table,
         aws_nuke_queue: sqs.Queue,
-        azure_nuke_queue: sqs.Queue,
+        azure_nuke_function: _lambda.Function,
         enviroment,
         **kwargs,
     ) -> None:
@@ -366,7 +392,7 @@ class MultiCloudStepFunctionCleanupByEvent(Construct):
         )
 
         azure_remove = AzureRemoveWithID(
-            self, f"{AZURE_PREFIX} AzureRemoveWithID", table=table, queue=azure_nuke_queue
+            self, f"{AZURE_PREFIX} AzureRemoveWithID", table=table, function=azure_nuke_function
         )
 
         get_item = tasks.DynamoGetItem(

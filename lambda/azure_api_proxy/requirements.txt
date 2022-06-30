@@ -1,0 +1,3 @@
+requests
+aws-xray-sdk==2.4.3
+aws-xray-lambda-segment-shim

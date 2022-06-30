@@ -55,6 +55,9 @@ class GraphQLEndpoint(Construct):
                 command_hooks=CommandHooks(),
             ),
             tracing=lambda_.Tracing.ACTIVE,
+            insights_version=lambda_.LambdaInsightsVersion.from_insight_version_arn(
+                "arn:aws:lambda:eu-central-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
+            ),
         )
 
         multi_cloud_table.grant_read_write_data(func)

@@ -1,4 +1,5 @@
 from typing import List
+import os
 from constructs import Construct
 from aws_cdk import (
     Duration,
@@ -76,6 +77,42 @@ class NukeLambdaWithQueue(Construct):
         self.queue = nuke_queue
 
 
+class PythonLambda(Construct):
+    def __init__(
+        self,
+        scope: Construct,
+        id: str,
+        asset: str,
+        **kwargs,
+    ) -> None:
+        super().__init__(
+            scope,
+            id,
+            **kwargs,
+        )
+        duration = Duration.minutes(5)
+        _lambda = lambda_python.PythonFunction(
+            self,
+            "lambda",
+            architecture=lambda_.Architecture.ARM_64,
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            entry=asset,
+            index="handler.py",
+            handler="handler",
+            environment={
+                "LOGLEVEL": "INFO",
+                # "GITLAB_AZURE_PIPELINE_WEBHOOK": os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "NA"),
+            },
+            timeout=duration,
+            memory_size=128,
+            tracing=lambda_.Tracing.ACTIVE,
+            insights_version=lambda_.LambdaInsightsVersion.from_insight_version_arn(
+                "arn:aws:lambda:eu-central-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
+            ),
+        )
+        self._lambda = _lambda
+
+
 class CloudSandboxes(Stack):
     def __init__(
         self,
@@ -98,10 +135,14 @@ class CloudSandboxes(Stack):
         eventHub = EventHub(self, "EventBus")
 
         # # # # # # # # # # # #
-        # Cleanup Queue with Lambda: AWS / AZURE
+        # Lambda AZURE Add and Remove Api-Proxy
+        # # # # # # # # # # # #
+        azure_api_proxy = PythonLambda(self, "azure_api_proxy", "lambda/azure_api_proxy")
+
+        # # # # # # # # # # # #
+        # Cleanup Queue with Lambda: AWS
         # # # # # # # # # # # #
         aws_nuke_lambda = NukeLambdaWithQueue(self, "aws nukeLambda", asset="lambda/cleanup_aws", role=role)
-        azure_nuke_lambda = NukeLambdaWithQueue(self, "azure nukeLambda", asset="lambda/cleanup_azure", role=role)
 
         # # # # # # # # # # # #
         # Add by Event: AWS
@@ -126,6 +167,7 @@ class CloudSandboxes(Stack):
             self,
             "AzureAddByEvent",
             table=multi_cloud_table.table,
+            function=azure_api_proxy._lambda,
             enviroment=enviroment,
         )
 
@@ -143,7 +185,7 @@ class CloudSandboxes(Stack):
             "MultiCloudCleanupByEvent",
             table=multi_cloud_table.table,
             aws_nuke_queue=aws_nuke_lambda.queue,
-            azure_nuke_queue=azure_nuke_lambda.queue,
+            azure_nuke_function=azure_api_proxy._lambda,
             enviroment=enviroment,
         )
 
@@ -161,7 +203,7 @@ class CloudSandboxes(Stack):
             "MultiCloudCleanupByCron",
             table=multi_cloud_table.table,
             aws_nuke_queue=aws_nuke_lambda.queue,
-            azure_nuke_queue=azure_nuke_lambda.queue,
+            azure_nuke_function=azure_api_proxy._lambda,
             enviroment=enviroment,
         )
         EventHubCron(self, "MultiCloudCleanupByCronRule", sfnStepFunction=cleanup_cron.step_function)
