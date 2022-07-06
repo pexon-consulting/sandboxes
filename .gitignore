@@ -12,4 +12,5 @@ cdk.out
 
 **/node_modules/*
 **/bindata.go
-coverage.out
+
+*coverage*
