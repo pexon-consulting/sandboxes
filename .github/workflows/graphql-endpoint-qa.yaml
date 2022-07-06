@@ -6,7 +6,7 @@ on:
     paths: [lambda/graph-ql-api/**]
   push:
     branches: [main]
-    paths: [lambda/graph-ql-api/**]
+    # paths: [lambda/graph-ql-api/**]
 
 defaults:
   run:
@@ -36,6 +36,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
           working-directory: ./lambda/graph-ql-api/
           files: ./coverage.out # optional
-          flags: graphql # optional
+          flags: graphql, lambda # optional
           name: codecov-graphql-endpoint # optional
           fail_ci_if_error: true # optional (default = false)
