@@ -1,12 +1,10 @@
-name: "graphql-endpoint - Quality Check"
+name: "GraphqlApi:Quality Gate"
 
 on:
   pull_request:
     branches: [main]
-    paths: [lambda/graph-ql-api/**]
   push:
-    branches: [main]
-    # paths: [lambda/graph-ql-api/**]
+    branches: [main, dev]
 
 defaults:
   run:
