@@ -1,0 +1,26 @@
+name: "IaC - Quality Check"
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: install all dependency
+        run: pip install -r requirements-dev.txt
+      - name: run test and generate coverage
+        run: pytest --cov=./ --cov-report=xml
+      - name: update code-coverage
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+          files: ./coverage.xml # optional
+          flags: iac # optional
+          name: iac # optional
+          fail_ci_if_error: true # optional (default = false)
