@@ -1,43 +1,70 @@
-name: 'IaC - Build an Release'
+name: "IaC - Build an Release"
 
 on:
   push:
-    branches: [main]
-    paths: [infrastrucutre/**]
+    branches: [feature/release-2.0]
 
-defaults:
-  run:
-    working-directory: infrastrucutre
+permissions:
+  id-token: write
+  contents: read # This is required for actions/checkout
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     steps:
-        - name: Checkout repository
-          uses: actions/checkout@v2
-        - name: install all dependency
-          run: pip install -r requirements-dev.txt
-        - name: run unittests
-          run: pytest --cov=./ --cov-report=xml
-        - name: update code-coverage
-          uses: codecov/codecov-action@v2
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
-            working-directory: ./infrastrucutre/
-            files: ./coverage.xml # optional
-            flags: infrastrucutre # optional
-            name: infrastrucutre # optional
-            fail_ci_if_error: true # optional (default = false)
-        - name: cdk deploy
-          uses: youyo/aws-cdk-github-actions@v2
-          with:
-            cdk_subcommand: 'deploy'
-            actions_comment: true
-            cdk_args: '--require-approval never'
-            working_dir: "infrastrucutre"
-          env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_CICD_IAC }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_CICD_IAC }}
-            AWS_DEFAULT_REGION: 'eu-central-1'
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            GITLAB_AZURE_PIPELINE_WEBHOOK: ${{ secrets.GITLAB_AZURE_PIPELINE_WEBHOOK }}
+      - name: Git clone the repository
+        uses: actions/checkout@v3
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: arn:aws:iam::063661473261:role/CICDPreperation-GitHubOIDCOIDCRole5001FAA8-3LWHM4EVGQP4
+          aws-region: eu-central-1
+
+      - name: cdk-aws
+        run: npm install -g aws-cdk@latest
+
+      - name: cdk version
+        run: cdk version
+
+      - name: init go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "^1.17.6" # The Go version to download (if necessary) and use.
+
+      - name: install go-bindata
+        run: go install github.com/jteeuwen/go-bindata/...@latest
+
+      - name: install all dependency
+        run: pip install -r requirements-dev.txt
+
+      - name: install all dependency
+        run: pip install -r requirements.txt
+
+      - name: cdk install
+        run: cdk deploy "test/*" --require-approval never
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      # - name: run unittests
+      #   run: pytest --cov=./ --cov-report=xml
+      # - name: update code-coverage
+      #   uses: codecov/codecov-action@v2
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }} # not required for public repos
+      #     working-directory: ./infrastrucutre/
+      #     files: ./coverage.xml # optional
+      #     flags: infrastrucutre # optional
+      #     name: infrastrucutre # optional
+      #     fail_ci_if_error: true # optional (default = false)
+
+      # - name: cdk deploy
+      #   uses: youyo/aws-cdk-github-actions@v2
+      #   with:
+      #     cdk_subcommand: "diff"
+      #     actions_comment: true
+      #     cdk_stack: "*/*"
+      #     # cdk_args: "--require-approval never"
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     GITLAB_AZURE_PIPELINE_WEBHOOK: ${{ secrets.GITLAB_AZURE_PIPELINE_WEBHOOK }}

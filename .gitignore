@@ -1,3 +1,14 @@
-.DS_Store
+*.swp
 package-lock.json
-frontend/yarn.lock
+__pycache__
+.pytest_cache
+.env
+.venv
+*.egg-info
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out
+
+**/node_modules/*
+**/bindata.go

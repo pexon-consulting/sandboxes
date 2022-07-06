@@ -1,0 +1,76 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+enum Cloud {
+  AWS
+  AZURE
+  GCP
+}
+
+enum State {
+  ERROR
+  RETURNED
+  ACCOUNTED
+}
+
+interface CloudSandbox {
+  id: ID!
+  assignedUntil: String!
+  assignedSince: String!
+  assignedTo: String!
+  state: String!
+}
+
+type AwsDetails {
+  accountId: String!
+  accountName: String!
+}
+
+type AwsSandbox implements CloudSandbox {
+  id: ID!
+  assignedUntil: String!
+  assignedSince: String!
+  assignedTo: String!
+  state: String!
+  AwsDetails: AwsDetails
+}
+
+type AzureSandbox implements CloudSandbox {
+  id: ID!
+  assignedUntil: String!
+  assignedSince: String!
+  assignedTo: String!
+  state: String!
+}
+
+union Sandbox = AzureSandbox | AwsSandbox
+
+type ListSandboxes {
+  sandboxes: [Sandbox]
+}
+
+input ComparisonOperator {
+  gt: String
+  ge: String
+  lt: String
+  le: String
+  eq: String
+}
+
+input ListSandboxesFilter {
+  state: [State]
+  assignedUntil: ComparisonOperator
+  assignedSince: ComparisonOperator
+}
+
+type Query {
+  listSandboxes(filter: ListSandboxesFilter): ListSandboxes
+}
+
+type Mutation {
+  leaseSandBox(leaseTime: String!, cloud: Cloud!): Sandbox!
+  returnSandbox(uuid: ID!): Boolean
+  updateSandbox: String
+}
