@@ -6,12 +6,14 @@ from variables import Enviroments
 
 from aws_cdk import (
     Duration,
+    RemovalPolicy,
     aws_iam as iam,
     aws_stepfunctions as sfn,
     aws_stepfunctions_tasks as tasks,
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
     aws_lambda as _lambda,
+    aws_logs as logs,
 )
 
 from step_function.tasks import (
@@ -25,6 +27,27 @@ from step_function.aws_tasks import FindAvailableSandbox, CreateSSOAssignment
 AWS_PREFIX = "aws"
 AZURE_PREFIX = "azure"
 sandbox_0_is_present = sfn.Condition.is_present("$.sandboxes[0]")
+
+
+class StepFunctionTemplate(Construct):
+    def __init__(self, scope: Construct, id: str, chain: sfn.Chain, **kwargs) -> None:
+        super().__init__(scope, id, **kwargs)
+        log_group = logs.LogGroup(
+            self,
+            f"Logs",
+            retention=logs.RetentionDays.TWO_MONTHS,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+        sfn_ = sfn.StateMachine(
+            self,
+            f"{id}",
+            definition=chain,
+            timeout=Duration.minutes(5),
+            tracing_enabled=True,
+            logs=sfn.LogOptions(destination=log_group, level=sfn.LogLevel.ERROR),
+        )
+        log_group
+        self.sfn = sfn_
 
 
 class DynamoTasks(Construct):
@@ -100,11 +123,17 @@ class AzureStepFunctionAdd(Construct):
 
         chain = sfn.Chain.start(start_process).next(dynamo_update_azure_response)
 
-        sfn_ = sfn.StateMachine(
-            self, "provison_az_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
-        )
+        # log_group = logs.LogGroup(self, "LogGroupProvisonAzSandbox", retention=logs.RetentionDays.TWO_MONTHS)
+        # sfn_ = sfn.StateMachine(
+        #     self,
+        #     "provison_az_sandbox",
+        #     definition=chain,
+        #     timeout=Duration.minutes(5),
+        #     tracing_enabled=True,
+        #     logs=sfn.LogOptions(destination=log_group, level=sfn.LogLevel.ERROR),
+        # )
 
-        self.step_function = sfn_
+        self.step_function = StepFunctionTemplate(self, "provison_az_sandbox", chain=chain).sfn
 
 
 class AwsStepFunctionAdd(Construct):
@@ -148,9 +177,11 @@ class AwsStepFunctionAdd(Construct):
 
         chain = sfn.Chain.start(start_process).next(create_sso_assignment)
 
-        sfn_ = sfn.StateMachine(
-            self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
-        )
+        # sfn_ = sfn.StateMachine(
+        #     self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
+        # )
+
+        sfn_ = StepFunctionTemplate(self, "ProvisonAwsSandbox", chain=chain).sfn
 
         pol = iam.PolicyStatement(
             actions=[
@@ -264,7 +295,6 @@ class AzureRemoveWithID(sfn.StateMachineFragment):
 
         api_proxy = tasks.LambdaInvoke(self, "lambda-invoke", lambda_function=function)
 
-
         update_state = tasks.DynamoUpdateItem(
             self,
             f"{PREFIX} dynamoDB returned",
@@ -278,7 +308,7 @@ class AzureRemoveWithID(sfn.StateMachineFragment):
             },
         )
         api_proxy.next(update_state)
-        
+
         self._start_state = api_proxy
         self._end_states = update_state.end_states
 
@@ -352,9 +382,7 @@ class MultiCloudStepFunctionCleanupByCron(Construct):
         """
         chain = sfn.Chain.start(query_expired_sandboxes_parallel)
 
-        sfn_ = sfn.StateMachine(
-            self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
-        )
+        sfn_ = StepFunctionTemplate(self, "ProvisonSandbox", chain=chain).sfn
 
         dynamo_query = iam.PolicyStatement(
             actions=[
@@ -415,9 +443,7 @@ class MultiCloudStepFunctionCleanupByEvent(Construct):
 
         chain = sfn.Chain.start(get_item).next(choice)
 
-        sfn_ = sfn.StateMachine(
-            self, "provison_sandbox", definition=chain, timeout=Duration.minutes(5), tracing_enabled=True
-        )
+        sfn_ = StepFunctionTemplate(self, "ProvisonSandbox", chain=chain).sfn
 
         if enviroment == Enviroments.prod:
             sso_policy = iam.PolicyStatement(

@@ -2,26 +2,77 @@
 import urllib3
 import json
 import os
+import logging
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.core import patch_all
+
+import requests
+
+patch_all(double_patch=True)
 
 http = urllib3.PoolManager()
-
 slack_webhook = os.getenv("SLACK_WEBHOOK")
+url = slack_webhook
+
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
+logger = logging.getLogger()
+logger.setLevel(level=LOGLEVEL)
 
 
 def handler(event, context):
-    msg = {"Content": event["Records"][0]["Sns"]["Message"]}
+    print(event)
+    try:
+        msg_raw = event["Records"][0]["Sns"]["Message"]
+        msg = json.loads(msg_raw)
+        alarm_name = msg["AlarmName"]
+        alarm_description = msg["AlarmDescription"]
+        state_change_time = msg["StateChangeTime"]
+
+    except:
+        payload = {
+            "blocks": [
+                {
+                    "type": "header",
+                    "text": {"type": "plain_text", "text": "🚨🚨🚨 SLACK_WEBHOOK_ERROR 🚨🚨🚨", "emoji": True},
+                },
+            ]
+        }
+        requests.post(url, json=payload)
+        return
+
     payload = {
         "blocks": [
             {"type": "header", "text": {"type": "plain_text", "text": "🚨 error occurred ⚠️", "emoji": True}},
-            {"type": "section", "fields": [{"type": "mrkdwn", "text": "*Type:*\nALARM"}]},
-            {"type": "section", "fields": [{"type": "mrkdwn", "text": f"*When:*\n{msg['StateChangeTime']}"}]},
             {
                 "type": "section",
-                "fields": [
-                    {"type": "mrkdwn", "text": f"*Function:*\nAWSSandbox-SSOhandlerlambda0DE9C552-AgPpx6Dlp9cT"}
-                ],
+                "text": {
+                    "type": "mrkdwn",
+                    "text": "*Type:*\nALARM",
+                },
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*AlarmName:*\n{alarm_name}",
+                },
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*AlarmDescription:*\n{alarm_description}",
+                },
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*StateChangeTime:*\n{state_change_time}",
+                },
             },
         ]
     }
-    url = slack_webhook
-    http.request("POST", url, body=json.dumps(payload).encode("utf-8"))
+
+    requests.post(url, json=payload)
+    return

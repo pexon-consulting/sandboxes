@@ -9,6 +9,7 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_lambda_event_sources as lambda_event_sources,
     aws_lambda_python_alpha as lambda_python,
+    aws_logs as logs,
 )
 from event_bus.infrastructure import EventHub, EventHubCron
 
@@ -63,6 +64,7 @@ class NukeLambdaWithQueue(Construct):
             insights_version=lambda_.LambdaInsightsVersion.from_insight_version_arn(
                 "arn:aws:lambda:eu-central-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
             ),
+            log_retention=logs.RetentionDays.TWO_MONTHS,
         )
         nuke_lambda.add_event_source(lambda_event_sources.SqsEventSource(nuke_queue))
 
@@ -109,6 +111,7 @@ class PythonLambda(Construct):
             insights_version=lambda_.LambdaInsightsVersion.from_insight_version_arn(
                 "arn:aws:lambda:eu-central-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
             ),
+            log_retention=logs.RetentionDays.TWO_MONTHS,
         )
         self._lambda = _lambda
 
@@ -220,4 +223,10 @@ class CloudSandboxes(Stack):
         )
         eventHub.bus.grant_all_put_events(lambda_go_graphql.func)
 
-        self.functions = [lambda_go_graphql.func]
+        self.functions = [lambda_go_graphql.func, azure_api_proxy._lambda, aws_nuke_lambda._lambda]
+        self.step_functions = [
+            cleanup_cron.step_function,
+            cleanup_event.step_function,
+            azure_aws_step_function.step_function,
+            add_aws_step_function.step_function,
+        ]

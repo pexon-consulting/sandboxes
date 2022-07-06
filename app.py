@@ -42,6 +42,9 @@ class SandboxStage(Stage):
         )
         self.stack = sandbox
 
+        monitoring = Monitoring(self, "Monitoring", functions=sandbox.functions, step_functions=sandbox.step_functions)
+        monitoring.add_dependency(sandbox)
+
 
 role = SSOHandlerCrossRole(
     app,

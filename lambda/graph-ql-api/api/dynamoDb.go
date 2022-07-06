@@ -43,11 +43,11 @@ func ComparisonOperatorFilterBuilder(filter models.ComparisonOperator, attribute
 	var model models.ComparisonOperator
 	if filter != model {
 		for key, operator := range map[string]string{
+			"Gt": ">",
+			"Ge": ">=",
 			"Eq": "=",
 			"Le": "<=",
 			"Lt": "<",
-			"Ge": ">=",
-			"Gt": ">",
 		} {
 			r := reflect.ValueOf(filter)
 			f := reflect.Indirect(r).FieldByName(key)

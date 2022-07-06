@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_sqs as sqs,
     aws_lambda_go_alpha as go_lambda,
+    aws_logs as log,
     # aws_apigatewayv2_authorizers_alpha as authorizers,
 )
 import jsii
@@ -58,6 +59,7 @@ class GraphQLEndpoint(Construct):
             insights_version=lambda_.LambdaInsightsVersion.from_insight_version_arn(
                 "arn:aws:lambda:eu-central-1:580247275435:layer:LambdaInsightsExtension-Arm64:2"
             ),
+            log_retention=log.RetentionDays.TWO_MONTHS,
         )
 
         multi_cloud_table.grant_read_write_data(func)

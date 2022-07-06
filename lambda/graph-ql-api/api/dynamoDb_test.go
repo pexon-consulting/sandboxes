@@ -2,18 +2,15 @@ package api_test
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"lambda/aws-sandbox/graph-ql-api/api"
 	"lambda/aws-sandbox/graph-ql-api/connection"
 	"lambda/aws-sandbox/graph-ql-api/models"
-	"os"
 	"testing"
 
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -175,8 +172,9 @@ func MockItems(input []models.SandboxItem) []types.WriteRequest {
 
 	return k
 }
-func TestMain(m *testing.M) {
 
+/*
+func TestMain(m *testing.M) {
 	tableName := uuid.New().String()
 
 	os.Setenv("DYNAMODB_TABLE", tableName)
@@ -260,14 +258,15 @@ func TestMain(m *testing.M) {
 	stop()
 	defer stop()
 	os.Exit(code)
-}
 
+}
+*/
 func stringPointer(s string) *string {
 	return &s
 }
 
 func TestQuery(t *testing.T) {
-	os.Setenv("DISABLE_TRACE", "true")
+	flag.Bool("tester", false, "")
 	ctx := context.TODO()
 	svc := connection.GetDynamoDbClient(ctx)
 

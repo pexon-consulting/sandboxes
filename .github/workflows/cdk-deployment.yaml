@@ -26,10 +26,12 @@ jobs:
 
       - name: cdk version
         run: cdk version
+
       - name: init go
         uses: actions/setup-go@v2
         with:
           go-version: "^1.17.6" # The Go version to download (if necessary) and use.
+
       - name: install go-bindata
         run: go install github.com/jteeuwen/go-bindata/...@latest
 
@@ -41,6 +43,8 @@ jobs:
 
       - name: cdk install
         run: cdk deploy "test/*" --require-approval never
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
       # - name: run unittests
       #   run: pytest --cov=./ --cov-report=xml
