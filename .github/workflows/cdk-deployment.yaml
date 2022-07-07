@@ -2,7 +2,7 @@ name: "IaC - Build an Release"
 
 on:
   workflow_run:
-    workflows: ["IaC:Quality Gate", "GraphqlApi:Quality Gate"]
+    workflows: ["IaC:Quality Gate"]
     branches: [main]
     types:
       - completed
