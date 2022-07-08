@@ -65,6 +65,15 @@ input ListSandboxesFilter {
   assignedSince: ComparisonOperator
 }
 
+input SandboxInput {
+  id: ID!
+  assignedUntil: String
+  assignedSince: String
+  assignedTo: String
+  state: String
+  cloud: Cloud!
+}
+
 type Query {
   listSandboxes(filter: ListSandboxesFilter): ListSandboxes
 }
@@ -72,5 +81,5 @@ type Query {
 type Mutation {
   leaseSandBox(leaseTime: String!, cloud: Cloud!): Sandbox!
   returnSandbox(uuid: ID!): Boolean
-  updateSandbox: String
+  updateSandbox(sandbox: SandboxInput!): Sandbox!
 }

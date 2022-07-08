@@ -19,6 +19,7 @@ from database.infrastructure import AWSTable
 from hosting.infrastructure import AWSSandBoxHosting
 from api.infrastructure import GraphQLEndpoint
 from step_function.infrastructure import (
+    MultiCloudSfnUpdateSandbox,
     AwsStepFunctionAdd,
     AzureStepFunctionAdd,
     MultiCloudStepFunctionCleanupByCron,
@@ -163,6 +164,24 @@ class CloudSandboxes(Stack):
             detail={"user": [{"exists": True}], "action": ["add"], "cloud": ["aws"]},
         )
 
+        multi_cloud_sfn_update_sandbox = MultiCloudSfnUpdateSandbox(
+            self,
+            "MultiCloudSfnUpdateSandbox",
+            table=multi_cloud_table.table,
+            enviroment=enviroment,
+        )
+
+        eventHub.addRuleWithStepFunctionTarget(
+            id="MultiCloudSfnUpdateSandboxRule",
+            sfnStepFunction=multi_cloud_sfn_update_sandbox.step_function,
+            detail={
+                "user": [{"exists": True}],
+                "id": [{"exists": True}],
+                "assigned_until": [{"exists": True}],
+                "action": ["update"],
+            },
+        )
+
         # # # # # # # # # # # #
         # Add by Event: AZURE
         # # # # # # # # # # # #
@@ -229,4 +248,5 @@ class CloudSandboxes(Stack):
             cleanup_event.step_function,
             azure_aws_step_function.step_function,
             add_aws_step_function.step_function,
+            multi_cloud_sfn_update_sandbox.step_function,
         ]
