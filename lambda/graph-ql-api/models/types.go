@@ -1,5 +1,7 @@
 package models
 
+import "github.com/graph-gophers/graphql-go"
+
 type ComparisonOperator struct {
 	Gt *string
 	Ge *string
@@ -18,4 +20,13 @@ type ListSandboxesFilter struct {
 	State         []*string
 	AssignedUntil ComparisonOperator
 	AssignedSince ComparisonOperator
+}
+
+type SandboxInput struct {
+	Id            graphql.ID
+	AssignedTo    *string
+	AssignedSince *string
+	AssignedUntil *string
+	Cloud         string
+	State         *string
 }

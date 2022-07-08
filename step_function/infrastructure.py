@@ -206,6 +206,32 @@ class AwsStepFunctionAdd(Construct):
         self.step_function = sfn_
 
 
+class MultiCloudSfnUpdateSandbox(Construct):
+    def __init__(self, scope: Construct, construct_id: str, table: dynamodb.Table, enviroment, **kwargs) -> None:
+        super().__init__(scope, construct_id, **kwargs)
+        PREFIX = "MultiCloud"
+
+        update_assigned_until = tasks.DynamoUpdateItem(
+            self,
+            f"{PREFIX} dynamoDB update",
+            table=table,
+            update_expression="SET assigned_until = :assigned_until",
+            expression_attribute_values={
+                ":assigned_until": tasks.DynamoAttributeValue.from_string(
+                    sfn.JsonPath.string_at("$.detail.assigned_until")
+                )
+            },
+            key={
+                "assigned_to": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.detail.user")),
+                "id": tasks.DynamoAttributeValue.from_string(sfn.JsonPath.string_at("$.detail.id")),
+            },
+        )
+
+        chain = sfn.Chain.start(update_assigned_until)
+
+        self.step_function = StepFunctionTemplate(self, "MultiCloudSfnUpdateSandbox", chain=chain).sfn
+
+
 """
 Cleanup Sandboxes 
 """
