@@ -12,7 +12,8 @@ def handler(event, context):
         state_name = user.replace(".", "-").split("@")[0]
         sandbox_name = f"rg-bootcamp-{state_name}"
 
-        url = os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK", "https://httpbin.org/post")
+        url = os.getenv("GITLAB_AZURE_PIPELINE_WEBHOOK",
+                        "https://httpbin.org/post")
 
         headers = CaseInsensitiveDict()
         headers["Content-Type"] = "application/x-www-form-urlencoded"
