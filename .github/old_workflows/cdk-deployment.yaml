@@ -45,6 +45,8 @@ jobs:
         run: cdk deploy "test/*" --require-approval never
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          GITLAB_AZURE_PIPELINE_WEBHOOK: ${{ secrets.GITLAB_AZURE_PIPELINE_WEBHOOK }}
+
 
       # - name: run unittests
       #   run: pytest --cov=./ --cov-report=xml

@@ -79,7 +79,14 @@ func (*Resolver) LeaseSandBox(ctx context.Context, args struct {
 
 		svc := connection.GetEventBridgeClient(ctx)
 
-		event := api.Event{}
+		event := api.Event{
+			Id:             string(graphqlId),
+			Assigned_until: *until,
+			Assigned_since: *since,
+			User:           jwt.Payload.Email,
+			Action:         "add",
+			Cloud:          "azure",
+		}
 
 		_, err = api.PutEvent(ctx, svc, &event)
 
