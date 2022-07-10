@@ -12,6 +12,7 @@ def handler(event, context):
                     "https://httpbin.org/post")
     headers = CaseInsensitiveDict()
     headers["Content-Type"] = "application/x-www-form-urlencoded"
+    params = f"variables[TF_STATE_NAME]={state_name}"
 
     if event["action"] == "add":
 
@@ -24,7 +25,6 @@ def handler(event, context):
             "removal_date":  event["assigned_until"]
         }
 
-        params = f"variables[TF_STATE_NAME]={state_name}"
         resp: Response = post(url, headers=headers, data=data,
                               params=params)
 
@@ -32,9 +32,12 @@ def handler(event, context):
         response: dict = resp.json()
         # TODO return here a map with ids to dump into dynamoDB
 
-        return resp
+        return resp.json()
 
     if event["action"] == "remove":
         # dome some remove action here
-        pass
-    return {"statusCode": 400}
+        params += "variables[DESTROY]=true"
+        resp: Response = post(url, headers=headers, data=data,
+                              params=params)
+
+    return resp.json()
